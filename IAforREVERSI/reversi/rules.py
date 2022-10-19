@@ -123,5 +123,12 @@ class Rules():
 
         
 
-    
+    def white_win(self,board):
+        assert board.current_color==None
+        white_avantage=np.sum(board.matrix)
+        if white_avantage>=0:
+            return 1
+        else :
+            return 0
+        
 

@@ -93,3 +93,10 @@ class Displayer():
 
 
         pg.display.flip()
+
+    def wait(self):
+        wait=True
+        while wait:
+            for event in pg.event.get():   #On parcours la liste de tous les événements reçus
+                if event.type == QUIT:     #Si un de ces événements est de type QUIT
+                    wait = False
