@@ -1,8 +1,8 @@
-from IAforREVERSI.reversi.board import Board
-from IAforREVERSI.reversi.rules import Rules
-from IAforREVERSI.display.displayer import Displayer
+from reversi.board import Board
+from reversi.rules import Rules
+from display.displayer import Displayer
 
-from IAforREVERSI.agents.human_agent.human_class import HumanAgent
+from agents.human_agent.human_class import HumanAgent
 
 def game(Agent1,Agent2):
 
@@ -12,8 +12,11 @@ def game(Agent1,Agent2):
     board=rules.init_board()
     displayer=Displayer(board=board)
 
-    while board.current_color in ['White','Black'] :
+    Agent1.new_game(board,rules)
+    Agent2.new_game(board,rules)
 
+    while board.current_color in ['White','Black'] :
+        
         current_player=players[board.current_color]
 
         if not(isinstance(current_player,HumanAgent)):
@@ -24,7 +27,11 @@ def game(Agent1,Agent2):
         displayer.computing=False
 
         assert rules.check_valid(board,move)
+
         rules.apply_move(board,move)
+        Agent1.observe_move(move)
+        Agent2.observe_move(board)
+
         displayer.update()
 
     

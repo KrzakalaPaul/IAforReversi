@@ -1,6 +1,8 @@
-class RandomAgent():
-    def __init__(self):
-        pass 
+from random import choice
+from agents.generic_agent import GenericAgent
+
+class RandomAgent(GenericAgent):
 
     def ask_move(self,rules,board,displayer):
-        return None
+        List=rules.list_valid_moves(board)
+        return choice(List)
