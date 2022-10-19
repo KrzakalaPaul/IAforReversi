@@ -12,10 +12,10 @@ class Rules():
         center=self.N//2
 
         kernel=np.zeros((2,2))
-        kernel[0,0]=-1
-        kernel[1,1]=-1
-        kernel[1,0]=+1
-        kernel[0,1]=+1
+        kernel[0,0]=+1
+        kernel[1,1]=+1
+        kernel[1,0]=-1
+        kernel[0,1]=-1
 
         matrix[center-1:center+1,center-1:center+1]=kernel
 
@@ -31,15 +31,16 @@ class Rules():
         return List
     
     def check_valid(self,board,move):
+        
+        matrix=board.matrix
+        if matrix[move]!=0:
+            return False
 
         if board.current_color=='White':
             ally,ennemy=1,-1
         else:
             ally,ennemy=-1,1
         
-        matrix=board.matrix
-        if matrix[move]!=0:
-            return False
         
         a,b=move
 

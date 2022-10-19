@@ -1,9 +1,10 @@
 from agents.generic_agent import GenericAgent
-from numpy import array,argmax, isin
+from numpy import array,argmax
+from time import time 
 
 class Node():
     def __init__(self):
-        self.reward_sum=0
+        self.reward_sum=0.0
         self.n_simu=0
         self.children=[]
         self.moves=[]
@@ -11,11 +12,17 @@ class Node():
         self.parent=None
 
     def white_score(self):
+        if self.n_simu==0:
+            return 0.5
+
         if self.team=='White':
             return self.reward_sum/self.n_simu
 
         if self.team=='Black':
             return 1-self.reward_sum/self.n_simu
+        
+
+
 
 
 class TerminalNode():
@@ -26,6 +33,11 @@ class TerminalNode():
     def white_score(self):
         return self.white_win
 
+    def winner(self):
+        if self.white_win==1:
+            return 'White'
+        else:
+            return 'Black'
 
 
 
@@ -39,6 +51,8 @@ class GenericMCTS(GenericAgent):
         self.true_board=starting_board.copy()
 
         self.root=Node()
+        self.root.n_simu=1
+        self.root.reward_sum=0.5
         self.root.team=starting_board.current_color
 
     def observe_move(self,new_move):
@@ -53,6 +67,8 @@ class GenericMCTS(GenericAgent):
 
         # Else create new tree
         self.root=Node()
+        self.root.n_simu=1
+        self.root.reward_sum=0.5
         self.root.team=self.true_board.current_color
 
     def select_child(self,node):
@@ -61,13 +77,34 @@ class GenericMCTS(GenericAgent):
     def expand(self,node,board):
         
         for legal_move in self.rules.list_valid_moves(board):
-            new_node=Node()
-            new_node.parent=node
-            node.moves.append(legal_move)
-            node.children.append(new_node)
+            
+            # Check For Terminal Node :
+            board_after_move=board.copy()
+            self.rules.apply_move(board_after_move,legal_move)
+            terminal=(board_after_move.current_color==None)
 
-    def eval(self,board_to_eval):
-        return 1,0
+            if terminal:
+                new_node=TerminalNode()
+                new_node.parent=node
+                new_node.white_win=self.rules.white_win(board_after_move)
+                node.moves.append(legal_move)
+                node.children.append(new_node)
+
+            else:
+                new_node=Node()
+                new_node.parent=node
+                new_node.team=board_after_move.current_color
+                node.moves.append(legal_move)
+                node.children.append(new_node)
+
+
+
+    def eval(self,board_to_eval): # Eval position (return value)
+        return 0
+
+    def eval_children(self,current_node,board_simulation): # Eval some of the child node (return list of evaluated)
+        return []
+
 
     def backprop(self,child):
 
@@ -104,17 +141,26 @@ class GenericMCTS(GenericAgent):
         current_node=self.root
 
         # Selection Part 
-
-        while len(current_node.children)==[]: 
+        stopping_condition=(len(current_node.children)==0) 
+        assert isinstance(current_node,Node)
+        while not(stopping_condition):
 
             k=self.select_child(current_node)
             
-            move=current_node.moves[k]
+            move=current_node.moves[k]  # type: ignore
             self.rules.apply_move(board_simulation,move)
 
-            current_node=current_node.children[k]
-        
+            current_node=current_node.children[k]  # type: ignore
+
+            stopping_condition=isinstance(current_node,TerminalNode) or len(current_node.children)==0 or current_node.n_simu==0
+
         if isinstance(current_node,TerminalNode):
+                self.backprop(current_node)
+
+        elif current_node.n_simu==0:  # type: ignore
+            reward=self.eval(board_simulation)
+            current_node.n_simu=1  # type: ignore
+            current_node.reward_sum=reward  # type: ignore
             self.backprop(current_node)
 
         else:
@@ -122,25 +168,11 @@ class GenericMCTS(GenericAgent):
             self.expand(current_node,board_simulation)
 
             # Evaluation
-            for k,child in enumerate(current_node.children):
-
-                board_to_eval=board_simulation.copy()
-                self.rules.apply_move(board_to_eval,current_node.moves[k])
-                child.team=board_to_eval.current_color
-
-                if child.team==None: # Terminal State !
-                    current_node.children[k]=TerminalNode()
-                    current_node.children[k].white_win=self.rules.white_win(board_to_eval)
-
-                else:
-                    n_simu,value=self.eval(board_to_eval)
-                    child.n_simu=n_simu
-                    child.reward_sum=value
-
+            evaluated_child=self.eval_children(current_node,board_simulation)
 
             # Backprop
-            for child in current_node.children:
-                self.backprop(child)  
+            for k in evaluated_child:
+                self.backprop(current_node.children[k])  
 
 
 

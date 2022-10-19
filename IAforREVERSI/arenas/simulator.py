@@ -22,7 +22,7 @@ def simulator(WhiteAgent,BlackAgent,N=8,board=None):
         
         current_player=players[board.current_color]
         move=current_player.ask_move(rules,board,None)
-        assert rules.check_valid(board,move)
+        #assert rules.check_valid(board,move)
         rules.apply_move(board,move)
         WhiteAgent.observe_move(move)
         BlackAgent.observe_move(move)
