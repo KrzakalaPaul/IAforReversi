@@ -1,11 +1,16 @@
 import numpy as np
+from sklearn import neighbors
 from .board import Board
+from scipy import ndimage
+from time import time
 
 class Rules():
 
     def __init__(self,N=8):
         assert N%2==0
         self.N=N
+        self.neighbors_kernel=np.zeros((3,3))+1
+        self.neighbors_kernel[1,1]=-9
         
     def init_board(self):
         matrix=np.zeros((self.N,self.N))
@@ -20,8 +25,20 @@ class Rules():
         matrix[center-1:center+1,center-1:center+1]=kernel
 
         return Board(matrix,'Black')
-    
-    # TO DO
+    """
+    # Version "Optimisé"
+    def list_valid_moves(self,board):
+        t=time()
+        occupied=np.abs(board.matrix)
+        potential_move=ndimage.convolve(occupied, self.neighbors_kernel, mode='constant', cval=0.0)
+        potential_move=np.where(potential_move>0)
+        List=[]
+        for a,b in zip(potential_move[0],potential_move[1]):
+            if self.check_valid(board,(a,b)):
+                List.append((a,b))
+        print(time()-t)
+        return List
+    """
     def list_valid_moves(self,board):
         List=[]
         for a in range(self.N):

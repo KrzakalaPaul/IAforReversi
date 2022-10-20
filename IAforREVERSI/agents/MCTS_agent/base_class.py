@@ -43,8 +43,10 @@ class TerminalNode():
 
 class GenericMCTS(GenericAgent):
 
-    def __init__(self,N_simulation=100):
-        self.N_simulation=N_simulation 
+    def __init__(self,simu_time=1,verbose=True):
+        self.simu_time=simu_time
+        self.verbose=verbose
+        self.tree_depth=0
 
     def new_game(self,starting_board,rules):
         self.rules=rules
@@ -63,6 +65,8 @@ class GenericMCTS(GenericAgent):
         for k,move in enumerate(self.root.moves):
             if move==new_move:
                 self.root=self.root.children[k]
+                self.tree_depth=self.tree_depth=-1
+                print('move already explored')
                 return
 
         # Else create new tree
@@ -70,6 +74,7 @@ class GenericMCTS(GenericAgent):
         self.root.n_simu=1
         self.root.reward_sum=0.5
         self.root.team=self.true_board.current_color
+        self.tree_depth=0
 
     def select_child(self,node):
         return 0
@@ -141,6 +146,8 @@ class GenericMCTS(GenericAgent):
         current_node=self.root
 
         # Selection Part 
+        depth=0
+
         stopping_condition=(len(current_node.children)==0) 
         assert isinstance(current_node,Node)
         while not(stopping_condition):
@@ -153,6 +160,10 @@ class GenericMCTS(GenericAgent):
             current_node=current_node.children[k]  # type: ignore
 
             stopping_condition=isinstance(current_node,TerminalNode) or len(current_node.children)==0 or current_node.n_simu==0
+
+            depth+=1
+
+        self.tree_depth=max(self.tree_depth,depth)
 
         if isinstance(current_node,TerminalNode):
                 self.backprop(current_node)
@@ -177,9 +188,15 @@ class GenericMCTS(GenericAgent):
 
 
     def ask_move(self,rules,board,displayer):
-        
-        for _ in range(self.N_simulation):  # Can add a command to stop simulation here
+        start_simu_time=time()
+        N_simu=0
+        while time()-start_simu_time<self.simu_time:
             self.simulation()
+            N_simu+=1
+        if self.verbose:
+            print(f"Nombre simulation {N_simu}")
+            print(f"Simulation/Seconde {N_simu/self.simu_time}")
+            print(f"Tree depth : {self.tree_depth}")
         
         if board.current_color=='White':
             greedy_score=[child.white_score()  for child in self.root.children]

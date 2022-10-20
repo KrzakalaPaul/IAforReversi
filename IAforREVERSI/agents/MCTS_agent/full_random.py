@@ -6,8 +6,8 @@ from random import choice
 
 class FullRandomMCTS(GenericMCTS):
 
-    def __init__(self,N_simulation=100,c=sqrt(2)):
-        self.N_simulation=N_simulation 
+    def __init__(self,simu_time=1,c=sqrt(2),verbose=True):
+        super(FullRandomMCTS, self).__init__(simu_time=simu_time,verbose=verbose)
         self.c=c
         self.rollout_agent=RandomAgent()
 
