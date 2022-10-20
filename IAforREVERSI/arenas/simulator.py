@@ -1,7 +1,6 @@
 from reversi.board import Board
 from reversi.rules import Rules
 from display.displayer import Displayer
-
 from agents.human_agent.human_class import HumanAgent
 
 def simulator(WhiteAgent,BlackAgent,N=8,board=None):
@@ -32,9 +31,10 @@ def simulator(WhiteAgent,BlackAgent,N=8,board=None):
 
 from numpy.random import randint
 
-def fight(Agent1,Agent2,N=8,repeat=100,refresh_rate=10):
+def fight(Agent1,Agent2,N=8,repeat=100,refresh_rate=10,verbose=True):
 
-    print('Fight Starting :')
+    if verbose:
+        print('Fight Starting :')
     
     win1=0
     for k in range(repeat):
@@ -46,9 +46,10 @@ def fight(Agent1,Agent2,N=8,repeat=100,refresh_rate=10):
             results=simulator(Agent2,Agent1,N=N)
             win1+=1-results
 
-        if k%refresh_rate==0:
-            print('')
-            print(f'Fight {int(100*(k+1)/repeat)}% complete')
-            print(f'Agent1 winrate so far : {int(100*win1/(k+1))}%')
+        if verbose:
+            if k%refresh_rate==0:
+                print('')
+                print(f'Fight {int(100*(k+1)/repeat)}% complete')
+                print(f'Agent1 winrate so far : {int(100*win1/(k+1))}%')
 
     return win1

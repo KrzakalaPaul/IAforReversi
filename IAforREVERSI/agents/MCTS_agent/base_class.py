@@ -66,7 +66,6 @@ class GenericMCTS(GenericAgent):
             if move==new_move:
                 self.root=self.root.children[k]
                 self.tree_depth=self.tree_depth=-1
-                print('move already explored')
                 return
 
         # Else create new tree
@@ -190,12 +189,12 @@ class GenericMCTS(GenericAgent):
     def ask_move(self,rules,board,displayer):
         start_simu_time=time()
         N_simu=0
-        while time()-start_simu_time<self.simu_time:
+        while time()-start_simu_time<self.simu_time or N_simu==0:
             self.simulation()
             N_simu+=1
         if self.verbose:
             print(f"Nombre simulation {N_simu}")
-            print(f"Simulation/Seconde {N_simu/self.simu_time}")
+            print(f"Simulation/Seconde {int(N_simu/self.simu_time)}")
             print(f"Tree depth : {self.tree_depth}")
         
         if board.current_color=='White':
