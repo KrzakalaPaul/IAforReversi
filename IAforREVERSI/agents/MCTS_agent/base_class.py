@@ -1,5 +1,5 @@
 from agents.generic_agent import GenericAgent
-from numpy import array,argmax
+from numpy import array,argmax,allclose
 from time import time 
 
 class Node():
@@ -53,8 +53,6 @@ class GenericMCTS(GenericAgent):
         self.true_board=starting_board.copy()
 
         self.root=Node()
-        self.root.n_simu=1
-        self.root.reward_sum=0.5
         self.root.team=starting_board.current_color
 
     def observe_move(self,new_move):
@@ -70,8 +68,6 @@ class GenericMCTS(GenericAgent):
 
         # Else create new tree
         self.root=Node()
-        self.root.n_simu=1
-        self.root.reward_sum=0.5
         self.root.team=self.true_board.current_color
         self.tree_depth=0
 
@@ -167,7 +163,7 @@ class GenericMCTS(GenericAgent):
         if isinstance(current_node,TerminalNode):
                 self.backprop(current_node)
 
-        elif current_node.n_simu==0:  # type: ignore
+        elif current_node.n_simu==0 and depth>0:  # type: ignore
             reward=self.eval(board_simulation)
             current_node.n_simu=1  # type: ignore
             current_node.reward_sum=reward  # type: ignore
@@ -182,7 +178,7 @@ class GenericMCTS(GenericAgent):
 
             # Backprop
             for k in evaluated_child:
-                self.backprop(current_node.children[k])  
+                self.backprop(current_node.children[k])    # type: ignore
 
 
 
@@ -192,10 +188,12 @@ class GenericMCTS(GenericAgent):
         while time()-start_simu_time<self.simu_time or N_simu==0:
             self.simulation()
             N_simu+=1
+
         if self.verbose:
             print(f"Nombre simulation {N_simu}")
             print(f"Simulation/Seconde {int(N_simu/self.simu_time)}")
             print(f"Tree depth : {self.tree_depth}")
+
         
         if board.current_color=='White':
             greedy_score=[child.white_score()  for child in self.root.children]

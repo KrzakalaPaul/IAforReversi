@@ -1,7 +1,9 @@
+from pyparsing import White
 from reversi.board import Board
 from reversi.rules import Rules
 from display.displayer import Displayer
 from agents.human_agent.human_class import HumanAgent
+#from agents.random_agent.random_class import RandomAgent
 
 def simulator(WhiteAgent,BlackAgent,N=8,board=None):
 
@@ -25,6 +27,9 @@ def simulator(WhiteAgent,BlackAgent,N=8,board=None):
         rules.apply_move(board,move)
         WhiteAgent.observe_move(move)
         BlackAgent.observe_move(move)
+
+        #if not(isinstance(WhiteAgent,RandomAgent) and isinstance(BlackAgent,RandomAgent)):
+        #    print(board.matrix,board.current_color)
 
 
     return rules.white_win(board)
