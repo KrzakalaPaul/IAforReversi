@@ -1,7 +1,7 @@
 import numpy as np
-from sklearn import neighbors
+#from sklearn import neighbors
 from .board import Board
-from scipy import ndimage
+#from scipy import ndimage
 from time import time
 
 class Rules():

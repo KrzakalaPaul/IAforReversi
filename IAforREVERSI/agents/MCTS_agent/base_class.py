@@ -189,6 +189,10 @@ class GenericMCTS(GenericAgent):
             self.simulation()
             N_simu+=1
 
+            if displayer!=None:
+                displayer.do_nothing()
+
+
         if self.verbose:
             print(f"Nombre simulation {N_simu}")
             print(f"Simulation/Seconde {int(N_simu/self.simu_time)}")

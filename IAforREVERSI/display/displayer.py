@@ -100,3 +100,6 @@ class Displayer():
             for event in pg.event.get():   #On parcours la liste de tous les événements reçus
                 if event.type == QUIT:     #Si un de ces événements est de type QUIT
                     wait = False
+
+    def do_nothing(self):
+        pg.event.pump()

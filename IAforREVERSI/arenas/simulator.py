@@ -34,6 +34,35 @@ def simulator(WhiteAgent,BlackAgent,N=8,board=None):
 
     return rules.white_win(board)
 
+def finite_horizon_simulator(WhiteAgent,BlackAgent,N=8,board=None,horizon=1):
+
+    players={"White" : WhiteAgent, "Black" : BlackAgent}
+
+    assert not(isinstance(WhiteAgent,HumanAgent))
+    assert not(isinstance(BlackAgent,HumanAgent))
+
+    rules=Rules(N=N)
+    if board==None:
+        board=rules.init_board()
+
+    WhiteAgent.new_game(board,rules)
+    BlackAgent.new_game(board,rules)
+
+    move_counter=0
+
+    while board.current_color in ['White','Black'] and move_counter<horizon :
+        
+        current_player=players[board.current_color]
+        move=current_player.ask_move(rules,board,None)
+        #assert rules.check_valid(board,move)
+        rules.apply_move(board,move)
+        WhiteAgent.observe_move(move)
+        BlackAgent.observe_move(move)
+
+        move_counter+=1
+    return board
+
+
 from numpy.random import randint
 
 def fight(Agent1,Agent2,N=8,repeat=100,refresh_rate=10,verbose=True):

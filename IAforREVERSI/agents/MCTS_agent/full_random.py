@@ -1,13 +1,13 @@
 from agents.MCTS_agent.base_class import GenericMCTS,Node,TerminalNode
 from agents.random_agent.random_class import RandomAgent
 from arenas.simulator import simulator
-from numpy import array,argmax,inf, isin, kaiser,log,sqrt
+from numpy import array,argmax,inf,log,sqrt
 from random import choice
 
 class FullRandomMCTS(GenericMCTS):
 
     def __init__(self,simu_time=1,c=sqrt(2),verbose=True):
-        super(FullRandomMCTS, self).__init__(simu_time=simu_time,verbose=verbose)
+        super().__init__(simu_time=simu_time,verbose=verbose)
         self.c=c
         self.rollout_agent=RandomAgent()
 
