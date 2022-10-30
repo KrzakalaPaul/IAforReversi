@@ -1,13 +1,12 @@
 from agents.MCTS_agent.full_random import FullRandomMCTS
 from agents.MCTS_agent.base_class import GenericMCTS
 from agents.random_agent.random_class import RandomAgent
-from reversi.heuristics import NaiveEval,Positions
 from arenas.simulator import finite_horizon_simulator
 from numpy import sqrt
 
 class EvalMCTS(FullRandomMCTS):
 
-    def __init__(self,simu_time=1,c=sqrt(2),eval_fct=NaiveEval(), rollout_horizon=0, rollout_repeat=1 ,verbose=True):
+    def __init__(self,eval_fct,simu_time=1,c=sqrt(2), rollout_horizon=0, rollout_repeat=1 ,verbose=True):
         super().__init__(c=c,simu_time=simu_time,verbose=verbose)
         self.c=c
         self.eval_fct=eval_fct
