@@ -48,15 +48,17 @@ def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None):
     WhiteAgent.new_game(board,rules)
     BlackAgent.new_game(board,rules)
 
-    save=[board.copy()]
+    save=[]
 
     while board.current_color in ['White','Black'] :
+
+        save.append(board.copy())
         
         current_player=players[board.current_color]
         move=current_player.ask_move(rules,board,None)
         #assert rules.check_valid(board,move)
         rules.apply_move(board,move)
-        save.append(board.copy())
+        
         WhiteAgent.observe_move(move)
         BlackAgent.observe_move(move)
 
@@ -70,9 +72,6 @@ def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None):
 def finite_horizon_simulator(WhiteAgent,BlackAgent,N=8,board=None,horizon=1):
 
     players={"White" : WhiteAgent, "Black" : BlackAgent}
-
-    assert not(isinstance(WhiteAgent,HumanAgent))
-    assert not(isinstance(BlackAgent,HumanAgent))
 
     rules=Rules(N=N)
     if board==None:

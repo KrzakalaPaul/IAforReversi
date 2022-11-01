@@ -61,11 +61,11 @@ class FullRandomMCTS(GenericMCTS):
                 n=child.n_simu
 
                 if n==0:
-                    ucb.append(inf)
+                    ucb.append(+inf)
                 else:
                     white_score=child.white_score()
                     if team=='White':
-                        ucb.append(white_score + self.c*log(N)/n)
+                        ucb.append(white_score + self.c*sqrt(log(N)/n))
                     else:
                         ucb.append(1-white_score + self.c*sqrt(log(N)/n))
             

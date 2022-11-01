@@ -24,15 +24,20 @@ class EvalMCTS(FullRandomMCTS):
             horizon_board=finite_horizon_simulator(self.rollout_agent(),self.rollout_agent(),N=self.rules.N,board=board_to_eval.copy(),horizon=self.H)
 
             if horizon_board.current_color==None:
-
-                if board_to_eval.current_color=='White':
-                    avg_score+= self.rules.white_win(horizon_board)
-
-                else :
-                    avg_score+= 1-self.rules.white_win(horizon_board)
-
+                white_value=self.rules.white_win(horizon_board)
+        
             else:
+                white_value=self.eval_fct(horizon_board)
 
-                avg_score+=self.eval_fct(horizon_board)  # type: ignore
+            if board_to_eval.current_color=='White':
+                avg_score+= white_value
+
+            else :
+                avg_score+= 1-white_value
 
         return avg_score/self.k
+
+    def ask_move(self,rules,board,displayer):
+        if self.verbose:
+            print(f"Probability of white win (eval fct) : {self.eval_fct(board)}")
+        return super().ask_move(rules,board,displayer)
