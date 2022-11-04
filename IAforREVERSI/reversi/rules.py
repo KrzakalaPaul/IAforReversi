@@ -1,7 +1,7 @@
 import numpy as np
 #from sklearn import neighbors
-from .board import Board
 #from scipy import ndimage
+from .board import Board
 from time import time
 
 class Rules():
@@ -9,14 +9,15 @@ class Rules():
     def __init__(self,N=8):
         assert N%2==0
         self.N=N
-        self.neighbors_kernel=np.zeros((3,3))+1
-        self.neighbors_kernel[1,1]=-9
+        #self.neighbors_kernel=np.zeros((3,3),dtype='i')+1
+        #self.neighbors_kernel[1,1]=0
         
     def init_board(self):
-        matrix=np.zeros((self.N,self.N))
+        dtype='i'
+        matrix=np.zeros((self.N,self.N),dtype=dtype)
         center=self.N//2
 
-        kernel=np.zeros((2,2))
+        kernel=np.zeros((2,2),dtype=dtype)
         kernel[0,0]=+1
         kernel[1,1]=+1
         kernel[1,0]=-1
@@ -25,18 +26,20 @@ class Rules():
         matrix[center-1:center+1,center-1:center+1]=kernel
 
         return Board(matrix,'Black')
-    """
+    
     # Version "Optimisé"
+    """
     def list_valid_moves(self,board):
-        t=time()
-        occupied=np.abs(board.matrix)
-        potential_move=ndimage.convolve(occupied, self.neighbors_kernel, mode='constant', cval=0.0)
-        potential_move=np.where(potential_move>0)
+        if board.current_color=='White':
+            occupied=np.where(board.matrix==-1,1,0)
+        else:
+            occupied=np.where(board.matrix==1,1,0)
+        potential_move=ndimage.convolve(occupied, self.neighbors_kernel, mode='constant', cval=0)
+        potential_move=np.where(potential_move>0)  # type: ignore
         List=[]
         for a,b in zip(potential_move[0],potential_move[1]):
             if self.check_valid(board,(a,b)):
                 List.append((a,b))
-        print(time()-t)
         return List
     """
     def list_valid_moves(self,board):
@@ -64,7 +67,8 @@ class Rules():
         for i in [-1,0,1]:
             for j in [-1,0,1]:
                 if (i,j)!=(0,0):
-
+                    """
+                    #This piece of code is x2 longer that the next one !
                     k=1
                     ally_seen=False
                     ennemy_seen=0
@@ -80,24 +84,43 @@ class Rules():
 
                     if ally_seen==True and ennemy_seen>0:
                         return True
-        
+
+                    """
+                    posx=a+i
+                    posy=b+j
+
+                    ennemy_captured=False
+
+                    while 0<=posx<self.N and 0<=posy<self.N :
+                        value=matrix[posx,posy]
+                        if value==ennemy:
+                            ennemy_captured=True
+                        else:
+                            if value==ally and ennemy_captured==True:
+                                return True 
+                            break
+                        posx+=i
+                        posy+=j
+                    
         return False
 
     # TO DO :
     def apply_move(self,board,move):
+
         if board.current_color=='White':
             ally,ennemy=1,-1
         else:
             ally,ennemy=-1,1
 
         board.matrix[move]=ally
-
+        
         a,b=move
 
         for i in [-1,0,1]:
             for j in [-1,0,1]:
                 if (i,j)!=(0,0):
-
+                    
+                    '''
                     k=1
                     ally_seen=False
                     ennemy_seen=0
@@ -120,6 +143,41 @@ class Rules():
                                 ally_seen=True
                             board.matrix[a+k*i,b+k*j]=ally
                             k+=1
+                    '''
+
+                    posx=a+i
+                    posy=b+j
+
+                    ennemy_seen=False
+                    ennemy_captured=False
+
+                    while 0<=posx<self.N and 0<=posy<self.N :
+                        value=board.matrix[posx,posy]
+                        if value==ennemy:
+                            ennemy_seen=True
+                        else:
+                            if value==ally and ennemy_seen==True:
+                                ennemy_captured=True 
+                            break
+                        posx+=i
+                        posy+=j
+
+                    if ennemy_captured==True:
+                        
+                        posx=a+i
+                        posy=b+j
+
+                        while True :
+                            
+                            board.matrix[posx,posy]=ally
+                            posx+=i
+                            posy+=j
+
+                            value=board.matrix[posx,posy]
+                            
+                            if value==ally:
+                                break
+                        
 
         if board.current_color=='White':
             board.current_color='Black'

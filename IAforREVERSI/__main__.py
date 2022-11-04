@@ -1,54 +1,60 @@
 
-### PRECOMPUTING DATA SETS:
+### LOADING AGENT :
 
+from agents.all_agents  import RandomAgent,FullRandomMCTS,EvalMCTS
+from reversi.heuristics import NaiveEval,Positions,Three,Four,Five
+
+
+eval_fct1=Five(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\Five_scaling\\coef',scaling=True)
+agent1=EvalMCTS(eval_fct1,simu_time=3,rollout_horizon=0, rollout_repeat=1 ,verbose=False)  # type: ignore
+
+#eval_fct2=Five(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\Five_noscaling\\coef',scaling=False)
+#agent2=EvalMCTS(eval_fct2,simu_time=3,rollout_horizon=0, rollout_repeat=1 ,verbose=False)  # type: ignore
+
+#agent2=FullRandomMCTS(simu_time=1,verbose=False)  # type: ignore
+
+
+### PRECOMPUTING DATA SETS:
 """
-from training.data_set import CreateDataSet,LoadDataSet
-from agents.all_agents  import HumanAgent,RandomAgent,FullRandomMCTS,EvalMCTS
-CreateDataSet('MCTS_t3_dataset_2',FullRandomMCTS(simu_time=3,verbose=False),FullRandomMCTS(simu_time=3,verbose=False),n_game=100,N=8)
-data_board,data_label=LoadDataSet('test_dataset')
+
+from training.data_set import CreateDataSet,LoadDataSet,UnionDataSet
+
+from time import time
+t=time()
+winrate_1=CreateDataSet('test',RandomAgent(),RandomAgent(),n_game=1000,N=8)
+print(time()-t)
 """
+
+#UnionDataSet(['MCTS_t3_dataset','CSM33_vs_SM33','CSM33_H0_vs_CSM33_H4'],'All')
 
 ### TRAINING AGENT :
-"""
-from reversi.heuristics import NaiveEval,Positions,StabilityAndMobility
-from training.train_linear_eval import TrainLinearEvaluation
 
+from training.train_linear_eval import TrainLinearEvaluation
 
 # Using Precomputed dataset for first step :
 N=8
-t=1
-TrainLinearEvaluation(StabilityAndMobility(N=N),H=6,k=5,t=t,n_eval=100,n_update=0,save=None,precomputed_data_set='MCTS_t3_dataset')
-"""
+t=3
+eval_to_train=Five(game_states=3,N=8,scaling=False)
+
+TrainLinearEvaluation(eval_to_train,H=0,k=1,t=t,n_eval=200,n_update=10,save=None,precomputed_data_set=None)
+#TrainLinearEvaluation(eval_to_train,H=0,k=1,t=t,n_eval=100,n_update=0,save=None,precomputed_data_set='All')
 
 ### COMPETITION BETWEEN AGENTS : 
-
-from tabnanny import verbose
+"""
 from arenas.simulator import fight
-from agents.all_agents  import HumanAgent,RandomAgent,FullRandomMCTS,EvalMCTS
-from reversi.heuristics import NaiveEval,Positions,StabilityAndMobility
+from time import time
 
-#agent1=FullRandomMCTS(simu_time=1,verbose=False)  # type: ignore
-
-eval_fct1=StabilityAndMobility(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\StabilityAndMobility-RandomData\\coef.npy')
-agent1=EvalMCTS(eval_fct1,simu_time=0.5,rollout_horizon=5, rollout_repeat=3 ,verbose=False)
-
-eval_fct2=StabilityAndMobility(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\StabilityAndMobility-MCTS-3\\coef.npy')
-agent2=EvalMCTS(eval_fct2,simu_time=0.5,rollout_horizon=5, rollout_repeat=3 ,verbose=False)
-
-fight(agent1,agent2,N=8,repeat=100,refresh_rate=10)  # type: ignore
-
+fight(RandomAgent(),RandomAgent(),N=8,repeat=1000,refresh_rate=10)  # type: ignore
+"""
 ### PLAYING THE GAME AGAINST AN AGENT : 
-
 """
 from arenas.game import game
-from agents.all_agents  import HumanAgent,RandomAgent,FullRandomMCTS,EvalMCTS
-from reversi.heuristics import NaiveEval,Positions,StabilityAndMobility
+from agents.all_agents  import HumanAgent
 
-whiteplayer=HumanAgent()
-#blackplayer=FullRandomMCTS(simu_time=2,verbose=True)
+whiteplayer=agent2
 
-eval_fct=StabilityAndMobility(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\StabilityAndMobility-RandomData\\coef.npy')
-blackplayer=EvalMCTS(eval_fct,simu_time=5,rollout_horizon=0, rollout_repeat=1 ,verbose=True)
+#blackplayer=HumanAgent()
+blackplayer=agent1
 
 game(whiteplayer,blackplayer,N=8)
 """

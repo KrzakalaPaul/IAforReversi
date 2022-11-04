@@ -5,10 +5,11 @@ from numpy import ndenumerate,copy
 # Colors :
 
 black_line= (0,0,0)
-green_board = (30,80,40)
+green_board = (30,60,20)
+green_line = (15,30,10)
 white_cirlce= (255,255,255)
 black_cirlce = (0,0,0)
-brown = (150,90,70)
+brown = (90,60,40)
 red=(150,0,30)
 blue=(60,70,200)
 
@@ -40,14 +41,19 @@ class Displayer():
         pg.draw.rect(self.fenetre, green_board, pg.Rect(offset, offset, board_size, board_size))
 
         for k in range(N+1):
-            pos=k*board_size/N+1
-            pg.draw.rect(self.fenetre, black_line, pg.Rect(offset+pos-line_width/2, offset, line_width/2 , board_size))
-            pg.draw.rect(self.fenetre, black_line, pg.Rect(offset, offset+pos-line_width/2, board_size , line_width/2))
+            if k==0 or k==N:
+                pos=k*board_size/N+1
+                pg.draw.rect(self.fenetre, black_line, pg.Rect(offset+pos-line_width/2, offset, line_width/2 , board_size))
+                pg.draw.rect(self.fenetre, black_line, pg.Rect(offset, offset+pos-line_width/2, board_size , line_width/2))
+            else:
+                pos=k*board_size/N+1
+                pg.draw.rect(self.fenetre, green_line, pg.Rect(offset+pos-line_width/2, offset, line_width/2 , board_size))
+                pg.draw.rect(self.fenetre, green_line, pg.Rect(offset, offset+pos-line_width/2, board_size , line_width/2))
 
-        pg.draw.circle(self.fenetre, black_line, (offset+board_size*2/N, offset+board_size*2/N), 2*line_width)
-        pg.draw.circle(self.fenetre, black_line, (offset+board_size-board_size*2/N, offset+board_size-board_size*2/N), 2*line_width)
-        pg.draw.circle(self.fenetre, black_line, (offset+board_size-board_size*2/N, offset+board_size*2/N), 2*line_width)
-        pg.draw.circle(self.fenetre, black_line, (offset+board_size*2/N, offset+board_size-board_size*2/N), 2*line_width)
+        pg.draw.circle(self.fenetre, green_line, (offset+board_size*2/N, offset+board_size*2/N), 1.5*line_width)
+        pg.draw.circle(self.fenetre, green_line, (offset+board_size-board_size*2/N, offset+board_size-board_size*2/N),1.5*line_width)
+        pg.draw.circle(self.fenetre, green_line, (offset+board_size-board_size*2/N, offset+board_size*2/N), 1.5*line_width)
+        pg.draw.circle(self.fenetre, green_line, (offset+board_size*2/N, offset+board_size-board_size*2/N), 1.5*line_width)
         
         circle_radius=0.9*board_size/(self.N)
         y=offset/2

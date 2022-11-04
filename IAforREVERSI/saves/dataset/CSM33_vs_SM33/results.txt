@@ -1,0 +1,1 @@
+60% win rate for SM33 i.e. Stability and Mobility, trained with MCTS(t=3), with 3 segments (early,mid late game)

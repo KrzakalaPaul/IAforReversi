@@ -205,5 +205,9 @@ class GenericMCTS(GenericAgent):
             greedy_score=[1-child.white_score()  for child in self.root.children]
 
         choice=argmax(array(greedy_score))
+        
+        if self.verbose:
+            print(f'Proba of winning, post tree search : {greedy_score[choice]}')
+            
         return self.root.moves[choice]
             

@@ -25,7 +25,6 @@ class EvalMCTS(FullRandomMCTS):
 
             if horizon_board.current_color==None:
                 white_value=self.rules.white_win(horizon_board)
-        
             else:
                 white_value=self.eval_fct(horizon_board)
 
@@ -39,5 +38,9 @@ class EvalMCTS(FullRandomMCTS):
 
     def ask_move(self,rules,board,displayer):
         if self.verbose:
-            print(f"Probability of white win (eval fct) : {self.eval_fct(board)}")
+            eval_white_win=self.eval_fct(board)
+            if board.current_color=='White':
+                print(f'Proba of winning, fast eval : {eval_white_win}')
+            else:
+                print(f'Proba of winning, fast eval : {1-eval_white_win}')
         return super().ask_move(rules,board,displayer)

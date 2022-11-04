@@ -1,7 +1,7 @@
 from reversi.board import Board
 from reversi.rules import Rules
 from display.displayer import Displayer
-
+from reversi.heuristics import potential_mobility
 from agents.human_agent.human_class import HumanAgent
 
 def game(WhiteAgent,BlackAgent,N=8):
@@ -31,7 +31,6 @@ def game(WhiteAgent,BlackAgent,N=8):
         rules.apply_move(board,move)
         WhiteAgent.observe_move(move)
         BlackAgent.observe_move(move)
-
         displayer.update()
 
     displayer.wait()

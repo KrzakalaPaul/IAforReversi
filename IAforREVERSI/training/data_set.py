@@ -15,6 +15,9 @@ def CreateDataSet(name,Agent1,Agent2,n_game=100,N=8):
     data_matrix=[]
     data_label=[]
 
+    Win_rate_1=0
+    Nb_games=0
+
     for game_counter in range(n_game):
 
         # Select Color 
@@ -22,10 +25,14 @@ def CreateDataSet(name,Agent1,Agent2,n_game=100,N=8):
         if game_counter%2==0:
             # Run Simulation with save
             label,save=simulator_with_save(Agent1,Agent2,N=N)
+            Win_rate_1+=label
+            Nb_games+=1
             
         else:
             # Run Simulation with save
             label,save=simulator_with_save(Agent2,Agent1,N=N)
+            Win_rate_1+=1-label
+            Nb_games+=1
 
         # Update Dataset
         for board_save in save:
@@ -33,11 +40,39 @@ def CreateDataSet(name,Agent1,Agent2,n_game=100,N=8):
             data_label.append(label)
 
         print(f"{int(100*game_counter/n_game)}%")
+        print(f' Win rate agent1 : {int(100*Win_rate_1/Nb_games)}%')
 
     np.savez_compressed(os.path.join(dataset_path, 'matrices'),data_matrix)
     np.save(os.path.join(dataset_path, 'labels'),np.array(data_label))
 
+    return Win_rate_1/Nb_games
+
+def UnionDataSet(names,union_name):
+
+    all_data_matrix=[]
+    all_data_label=[]
+
+    for name in names :
+        data_board,data_label=LoadDataSet(name)
+
+        for board,label in zip(data_board,data_label):
+            all_data_matrix.append(board.matrix)
+            all_data_label.append(label)
+    
+    save_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves')
+    dataset_path=os.path.join(save_path, 'dataset\\'+union_name)
+
+    try: 
+        os.makedirs(dataset_path)
+    except OSError:
+        pass
+
+    np.savez_compressed(os.path.join(dataset_path, 'matrices'),all_data_matrix)
+    np.save(os.path.join(dataset_path, 'labels'),np.array(all_data_label))
+        
+
 def LoadDataSet(name):
+    
     save_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves')
     dataset_path=os.path.join(save_path, 'dataset\\'+name)
 

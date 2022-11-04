@@ -8,6 +8,8 @@ from tqdm import tqdm
 from copy import deepcopy
 from .data_set import LoadDataSet
 
+from sklearn.covariance import empirical_covariance
+np.set_printoptions(precision=1)
 
 def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=None,precomputed_data_set=None):
     # eval_class = The class of linear evaluation to train 
@@ -61,19 +63,24 @@ def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=No
         Agent=FullRandomMCTS(simu_time=t,verbose=False) # type: ignore
 
         if precomputed_data_set!=None:
-
+           
+            
             data_board,data_label=LoadDataSet(precomputed_data_set)
             data_features=[eval_fct.features(board) for board in data_board]
             data_features=np.concatenate(data_features)
-
             
 
+            #print(data_features.shape)
+            #print(np.diag(empirical_covariance(data_features)))
             eval_fct.model.fit(X=data_features,y=data_label)
+            print('Regression Score on precomputed dataset :')
+            print(eval_fct.model.score(X=data_features,y=data_label))
+            print('Associated coef :')
+            print(eval_fct.print())
 
-            print(eval_fct.model.coef_)
             # save old params in directory 
             np_path=os.path.join(run_path,f"coef_{-1}")
-            np.save(np_path,eval_fct.model.coef_)
+            eval_fct.save(np_path)
 
             # update pool of opponents
             Opponent_Pool.append(EvalMCTS(deepcopy(eval_fct),simu_time=t, rollout_horizon=H, rollout_repeat=k,verbose=False ))  # type: ignore
@@ -89,6 +96,7 @@ def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=No
 
         # Initialize empty dateset features/winner
         data_features=[]
+        data_matrix=[]
         data_label=[]
 
         print("New simulation set")
@@ -120,21 +128,33 @@ def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=No
             # Update Dataset
             for board_save in save:
                 data_features.append(eval_fct.features(board_save))
+                data_matrix.append(board_save.matrix)
                 data_label.append(label)
 
             print(f"{int(100*simulation_counter/n_eval)}%")
-
+        
         data_label=np.array(data_label)
         data_features=np.concatenate(data_features)
 
         # update param
-        print(data_label)
-        print(data_features)
+
         eval_fct.model.fit(X=data_features,y=data_label)
+
+        print(f'Regression Score on dataset {update_counter} :')
+        print(eval_fct.model.score(X=data_features,y=data_label))
+        print('Associated coef :')
         print(eval_fct.model.coef_)
+
         # save old params in directory 
         np_path=os.path.join(run_path,f"coef_{update_counter}")
-        np.save(np_path,eval_fct.model.coef_)
+        eval_fct.save(np_path)
+
+        # save data set 
+
+        dataset_path=os.path.join(run_path,f"data_{update_counter}")
+        os.makedirs(dataset_path)
+        np.savez_compressed(os.path.join(dataset_path, 'matrices'),data_matrix)
+        np.save(os.path.join(dataset_path, 'labels'),data_label)
 
         # update pool of opponents
         Opponent_Pool.append(EvalMCTS(deepcopy(eval_fct),simu_time=t, rollout_horizon=H, rollout_repeat=k,verbose=False ))  # type: ignore
@@ -148,3 +168,6 @@ def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=No
         print(f"Win rate against previous agents : {Win_rate}")
 
     return Opponent_Pool 
+
+
+    
