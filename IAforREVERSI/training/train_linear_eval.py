@@ -162,11 +162,12 @@ def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=No
 
 
         # Display stats:
-        print("")
+        
         print(f"Agent : {update_counter}")
         Win_rate=Win_rate/(Nb_games+1e-6)
         print(f"Win rate against previous agents : {Win_rate}")
-
+        print("")
+        
     return Opponent_Pool 
 
 

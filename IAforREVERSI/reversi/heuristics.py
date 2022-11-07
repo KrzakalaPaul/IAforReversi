@@ -32,10 +32,10 @@ class LinearEvaluation():
     def  __init__(self,N=8,save=None,scaling=True):
 
         self.N=N
-        lr=LogisticRegression(fit_intercept=False,warm_start=True)
+        lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
         lr.intercept_= np.zeros((1,))
         lr.classes_=np.array([0,1])
-        self.lr=lr
+        self.lr=lr  
         if scaling:
             self.model= make_pipeline(StandardScaler(),self.lr)
         else:
