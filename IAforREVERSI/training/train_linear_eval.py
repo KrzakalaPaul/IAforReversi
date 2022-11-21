@@ -143,7 +143,7 @@ def TrainLinearEvaluation(eval_fct,H=1,k=1,t=0.1,n_eval=100,n_update=100,save=No
         print(f'Regression Score on dataset {update_counter} :')
         print(eval_fct.model.score(X=data_features,y=data_label))
         print('Associated coef :')
-        print(eval_fct.model.coef_)
+        print(eval_fct.lr.coef_)
 
         # save old params in directory 
         np_path=os.path.join(run_path,f"coef_{update_counter}")
