@@ -25,7 +25,18 @@ class Rules():
 
         matrix[center-1:center+1,center-1:center+1]=kernel
 
-        return Board(matrix,'Black')
+        board=Board(matrix,'Black')
+        board.frontier=set()  # type: ignore
+        for i in [-1,0,1,2]:
+            for j in [-1,0,1,2]:
+                board.frontier.add((center-1+i,center-1+j))
+        for i in [0,1]:
+            for j in [0,1]:
+                board.frontier.remove((center-1+i,center-1+j))
+
+        board.valid_moves=self.list_valid_moves(board)
+
+        return board
     
     # Version "Optimisé"
     """
@@ -44,17 +55,14 @@ class Rules():
     """
     def list_valid_moves(self,board):
         List=[]
-        for a in range(self.N):
-            for b in range(self.N):
-                if self.check_valid(board,(a,b)):
-                    List.append((a,b))
+        for move in board.frontier:
+            if self.check_valid_from_empty(board,move):
+                List.append(move)
         return List
     
-    def check_valid(self,board,move):
+    def check_valid_from_empty(self,board,move):
         
         matrix=board.matrix
-        if matrix[move]!=0:
-            return False
 
         if board.current_color=='White':
             ally,ennemy=1,-1
@@ -104,6 +112,15 @@ class Rules():
                     
         return False
 
+    def check_valid(self,board,move):
+        
+        if board.matrix[move]==0:
+            return self.check_valid_from_empty(board,move)
+        else:
+            return False
+        
+      
+
     # TO DO :
     def apply_move(self,board,move):
 
@@ -115,35 +132,30 @@ class Rules():
         board.matrix[move]=ally
         
         a,b=move
+        dist_x_plus=self.N-a-1
+        dist_x_minus=a
+        dist_y_plus=self.N-b-1
+        dist_y_minus=b
 
         for i in [-1,0,1]:
             for j in [-1,0,1]:
                 if (i,j)!=(0,0):
-                    
-                    '''
-                    k=1
-                    ally_seen=False
-                    ennemy_seen=0
-                    bolean_empty=True
-                    while 0<=a+k*i<self.N and 0<=b+k*j<self.N and not(ally_seen) and bolean_empty:
-                        if board.matrix[a+k*i,b+k*j]==ally:
-                            ally_seen=True
-                        elif board.matrix[a+k*i,b+k*j]==ennemy:
-                            ennemy_seen+=1
-                        else:
-                            bolean_empty=False
-                        k+=1
 
+                    if j==1:
+                        dist_y=dist_y_plus
+                    elif j==-1:
+                        dist_y=dist_y_minus
+                    else:
+                        dist_y=self.N
                     
-                    if ally_seen==True and ennemy_seen>0:
-                        ally_seen=False
-                        k=1
-                        while ally_seen==False:
-                            if board.matrix[a+k*i,b+k*j]==ally:
-                                ally_seen=True
-                            board.matrix[a+k*i,b+k*j]=ally
-                            k+=1
-                    '''
+                    if i==1:
+                        dist_x=dist_x_plus
+                    elif i==-1:
+                        dist_x=dist_x_minus
+                    else:
+                        dist_x=self.N
+
+                    dist=min(dist_x,dist_y)
 
                     posx=a+i
                     posy=b+j
@@ -151,50 +163,63 @@ class Rules():
                     ennemy_seen=False
                     ennemy_captured=False
 
-                    while 0<=posx<self.N and 0<=posy<self.N :
+                    dist_ally=0
+
+                    for _ in range(dist):
                         value=board.matrix[posx,posy]
                         if value==ennemy:
                             ennemy_seen=True
                         else:
-                            if value==ally and ennemy_seen==True:
+                            if value==ally and ennemy_seen:
                                 ennemy_captured=True 
                             break
                         posx+=i
                         posy+=j
+                        dist_ally+=1
 
                     if ennemy_captured==True:
                         
                         posx=a+i
                         posy=b+j
 
-                        while True :
-                            
+                        for _ in range(dist_ally):
                             board.matrix[posx,posy]=ally
                             posx+=i
                             posy+=j
+  
 
-                            value=board.matrix[posx,posy]
-                            
-                            if value==ally:
-                                break
-                        
-
+        # Update Player
         if board.current_color=='White':
             board.current_color='Black'
         else:
             board.current_color='White'
 
-        # Can the opponent move ?
+        # Update Frontier
+        board.frontier.remove(move)
+        for i in [-1,0,1]:
+            for j in [-1,0,1]:
+                if (i,j)!=(0,0):
+                    x=a+i
+                    y=b+j
+                    if (0<=x<self.N) and (0<=y<self.N):
+                        if board.matrix[x,y]==0: 
+                            board.frontier.add((a+i,b+j))
 
-    
-        if self.list_valid_moves(board)==[]:
+        # Can the opponent move ?
+        new_moves=self.list_valid_moves(board)
+        board.valid_moves=new_moves
+
+        if len(new_moves)==0:
 
             if board.current_color=='White':
                 board.current_color='Black'
             else:
                 board.current_color='White'
 
-            if self.list_valid_moves(board)==[]:
+            new_moves=self.list_valid_moves(board)
+            board.valid_moves=new_moves
+
+            if len(new_moves)==0:
                 board.current_color=None
 
         
@@ -202,7 +227,9 @@ class Rules():
     def white_win(self,board):
         assert board.current_color==None
         white_avantage=np.sum(board.matrix)
-        if white_avantage>=0:
+        if white_avantage==0:
+            return 0.5
+        elif white_avantage>0:
             return 1
         else :
             return 0

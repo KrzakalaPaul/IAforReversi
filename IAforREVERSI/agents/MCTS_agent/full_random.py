@@ -1,4 +1,4 @@
-from agents.MCTS_agent.base_class import GenericMCTS,Node,TerminalNode
+from agents.MCTS_agent.base_class import GenericMCTS,Root,TerminalNode,Leaf,Node
 from agents.random_agent.random_class import RandomAgent
 from arenas.simulator import simulator
 from numpy import array,argmax,inf,log,sqrt
@@ -14,68 +14,36 @@ class FullRandomMCTS(GenericMCTS):
     def eval(self,board_to_eval):
 
         white_score=simulator(self.rollout_agent,self.rollout_agent,N=self.rules.N,board=board_to_eval.copy())
+        return 2*white_score-1
 
-        if board_to_eval.current_color=='White':
-            return white_score
-
-        else :
-            return 1-white_score
-
-    def eval_children(self,node,board_simulation):
-        # Check if a move lead to a postive terminal state
-        # If not rollout eval of one children at random
-
-        non_terminal_child=[]
-        for k,child in enumerate(node.children):
-            if isinstance(child,TerminalNode):
-                if node.team==child.winner:
-                    return [k]
-            else:
-                non_terminal_child.append(k)
-                
-        if non_terminal_child==[]:
-            return [0]
-
-        k=choice(non_terminal_child)
-        board_to_eval=board_simulation.copy()
-        self.rules.apply_move(board_to_eval,node.moves[k])
-        value=self.eval(board_to_eval)
-        node.children[k].n_simu=1
-        node.children[k].reward_sum=value
-        return [k]
 
     def select_child(self,node):
         team=node.team
         N=node.n_simu
         ucb=[]
+
+
+        # Try To build an UCB for non solved node:
         for child in node.children:
 
+            if isinstance(child,Leaf):
+                n=1
+                ucb.append(child.ucb_score()*team + self.c*sqrt(log(N)/n))
+                
+            elif isinstance(child,Node):
+                if not(child.solved):
+                    n=child.n_simu
+                    ucb.append(child.ucb_score()*team + self.c*sqrt(log(N)/n))
 
-            if isinstance(child,TerminalNode):
-                if team=='White':
-                    ucb.append((child.white_win-0.5)*inf)
-                else:
-                    ucb.append(-(child.white_win-0.5)*inf)
 
-            else:
-                n=child.n_simu
-
-                if n==0:
-                    ucb.append(+inf)
-                else:
-                    white_score=child.white_score()
-                    if team=='White':
-                        ucb.append(white_score + self.c*sqrt(log(N)/n))
-                    else:
-                        ucb.append(1-white_score + self.c*sqrt(log(N)/n))
-            
-        return argmax(array(ucb))
-
+        if len(ucb)!=0:
+            return node.children[argmax(array(ucb))]
         
-
-
-
-
+        else:
+            # Build UCB from extreme score 
+            for child in node.children:
+                ucb.append(team*child.exact_score)  # type: ignore
+            return node.children[argmax(array(ucb))]
 
 
 

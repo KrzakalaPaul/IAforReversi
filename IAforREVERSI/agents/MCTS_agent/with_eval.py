@@ -44,3 +44,17 @@ class EvalMCTS(FullRandomMCTS):
             else:
                 print(f'Proba of winning, fast eval : {1-eval_white_win}')
         return super().ask_move(rules,board,displayer)
+
+    def init_score(self,node):
+        # Note : if there was a winning TerminalNode 
+        # this node would be 'solved' and this woud not be called
+        # hence we can ignore the TerminalNode who are all lost
+
+        children_scores=[]
+        for child in node.children:
+            if not(isinstance(child,TerminalNode)):
+                children_scores.append(child.score())
+        node.n_simu=1 
+        team=node.team # type: ignore
+        minimax_score=max([team*score for score in children_scores])
+        node.score_sum=team*self.n_simu_init*minimax_score # type: ignore

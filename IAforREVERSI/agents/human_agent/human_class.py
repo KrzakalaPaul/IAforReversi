@@ -18,6 +18,8 @@ class HumanAgent(GenericAgent):
                         if rules.check_valid(board,move):
                             return move
 
+            displayer.do_nothing()
+
                     
                     
  

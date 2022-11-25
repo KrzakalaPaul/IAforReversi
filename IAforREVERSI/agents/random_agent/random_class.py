@@ -4,5 +4,5 @@ from agents.generic_agent import GenericAgent
 class RandomAgent(GenericAgent):
 
     def ask_move(self,rules,board,displayer):
-        List=rules.list_valid_moves(board)
+        List=board.valid_moves
         return choice(List)

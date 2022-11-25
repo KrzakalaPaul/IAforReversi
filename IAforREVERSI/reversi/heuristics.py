@@ -101,13 +101,16 @@ class Positions(LinearEvaluation):
 
 def mobility(board,rules):
 
-    board_black=board.copy()
-    board_black.current_color='Black'
-    black_mobility=len(rules.list_valid_moves(board_black))
-
-    board_white=board.copy()
-    board_white.current_color='White'
-    white_mobility=len(rules.list_valid_moves(board_white))
+    if board.current_color=='Black':
+        black_mobility=len(board.valid_moves)
+        board_white=board.copy()
+        board_white.current_color='White'
+        white_mobility=len(rules.list_valid_moves(board_white))
+    else:
+        white_mobility=len(board.valid_moves)
+        board_black=board.copy()
+        board_black.current_color='Black'
+        black_mobility=len(rules.list_valid_moves(board_black))
 
     return (white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)
 

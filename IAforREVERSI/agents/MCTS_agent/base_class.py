@@ -1,43 +1,78 @@
 from agents.generic_agent import GenericAgent
 from numpy import array,argmax,allclose
 from time import time 
+from numpy import inf
 
-class Node():
-    def __init__(self):
-        self.reward_sum=0.0
+class Root():   
+    def __init__(self,board):
+        self.score_sum=0.0
         self.n_simu=0
         self.children=[]
-        self.moves=[]
+        if board.current_color=='White':
+            self.team=1
+        else:
+            self.team=-1
+        self.board=board
+        self.solved=False
+
+class Leaf():   
+    def __init__(self):
+        self.temporary_score=0.0
+        self.move=None
         self.team=None
         self.parent=None
+        self.board=None
 
-    def white_score(self):
-        if self.n_simu==0:
-            return 0.5
+    def score(self):
+        return self.temporary_score
+    
+    def ucb_score(self):
+        return self.temporary_score
 
-        if self.team=='White':
-            return self.reward_sum/self.n_simu
+class Node():
+    def __init__(self,ex_leaf):
 
-        if self.team=='Black':
-            return 1-self.reward_sum/self.n_simu
-        
+        self.score_sum=0
+        self.n_simu=0
 
+        self.solved=False
+        self.exact_score=None
 
-
+        self.move=ex_leaf.move
+        self.team=ex_leaf.team
+        self.parent=ex_leaf.parent
+        self.children=[] # MUST BE EXPANDED AFTER CREATION
+    
+    def ucb_score(self):
+        return self.score_sum/self.n_simu
+    
+    def score(self):
+        if self.solved:
+            return inf*self.exact_score  # type: ignore
+        else:
+            return self.ucb_score()
 
 class TerminalNode():
     def __init__(self):
-        self.white_win=0
-        self.parent=Node()
+        self.exact_score=None  #1 for white win -1 for Black Win
+        self.parent=None
+        self.move=None
+    
+    def score(self):
+        return inf*self.exact_score  # type: ignore
+    
+    def ucb_score(self):
+        return self.exact_score
 
-    def white_score(self):
-        return self.white_win
-
-    def winner(self):
-        if self.white_win==1:
-            return 'White'
-        else:
-            return 'Black'
+def Count_Leaves_In_Child(Node):
+    if isinstance(Node,Leaf):
+        return 'I am a leaf'
+    else:
+        counter=0
+        for child in Node.children:
+            if isinstance(child,Leaf):
+                counter+=1
+        return counter
 
 
 
@@ -47,142 +82,201 @@ class GenericMCTS(GenericAgent):
         self.simu_time=simu_time
         self.verbose=verbose
         self.tree_depth=0
+        self.simulations_counter_total=0
 
     def new_game(self,starting_board,rules):
         self.rules=rules
-        self.true_board=starting_board.copy()
-
-        self.root=Node()
-        self.root.team=starting_board.current_color
-
-    def observe_move(self,new_move):
-
-        self.rules.apply_move(self.true_board,new_move)
-
-        # Check if the move is known
-        for k,move in enumerate(self.root.moves):
-            if move==new_move:
-                self.root=self.root.children[k]
-                self.tree_depth=self.tree_depth=-1
-                return
-
-        # Else create new tree
-        self.root=Node()
-        self.root.team=self.true_board.current_color
-        self.tree_depth=0
+        self.root=Root(starting_board.copy())
+        self.expand(self.root)
 
     def select_child(self,node):
-        return 0
-    
-    def expand(self,node,board):
-        
-        for legal_move in self.rules.list_valid_moves(board):
-            
-            # Check For Terminal Node :
-            board_after_move=board.copy()
-            self.rules.apply_move(board_after_move,legal_move)
-            terminal=(board_after_move.current_color==None)
+        ### 'TREE POLICY' -> Must be Overwritten
+        return node.children[0]
 
-            if terminal:
-                new_node=TerminalNode()
-                new_node.parent=node
-                new_node.white_win=self.rules.white_win(board_after_move)
-                node.moves.append(legal_move)
-                node.children.append(new_node)
-
-            else:
-                new_node=Node()
-                new_node.parent=node
-                new_node.team=board_after_move.current_color
-                node.moves.append(legal_move)
-                node.children.append(new_node)
-
-
-
-    def eval(self,board_to_eval): # Eval position (return value)
+    def eval(self,board):
+        ### Evaluation -> Must be Overwritten
         return 0
 
-    def eval_children(self,current_node,board_simulation): # Eval some of the child node (return list of evaluated)
-        return []
+    def init_score(self,node):
+        # Note : if there was a winning TerminalNode 
+        # this node would be 'solved' and this woud not be called
+        # hence we can ignore the TerminalNode who are all lost
 
+        children_scores=[]
+        for child in node.children:
+            if not(isinstance(child,TerminalNode)):
+                children_scores.append(child.ucb_score())
+        node.n_simu=len(children_scores)
+        node.score_sum=sum([score for score in children_scores])
 
-    def backprop(self,child):
+    def expand(self,node):
 
-        if isinstance(child,TerminalNode):
-            ancester=child.parent
-            while ancester!=None:
+        # ------------------- Expand a Leaf (or the root) ------------------- #
 
-                ancester.n_simu+=1
-                if ancester.team=='White':
-                    ancester.reward_sum+=child.white_win
-                else:
-                    ancester.reward_sum+=1-child.white_win
+        board=node.board
 
-                ancester=ancester.parent
-
+        if isinstance(node,Leaf):
+            # ------------------- Swap Leaf with Node ------------------- #
+            parent=node.parent
+            new_node=Node(node)
+            parent.children.remove(node)   # type: ignore
+            parent.children.append(new_node)  # type: ignore
+            node=new_node
         else:
-            value=child.reward_sum/child.n_simu
+            assert isinstance(node,Root)
 
-            ancester=child.parent
-            while ancester!=None:
-                ancester.n_simu+=1
-                if ancester.team==child.team:
-                    ancester.reward_sum+=value
+        
+
+        # ------------------- Create Children (leaves or Terminals) ------------------- #
+        for valid_move in board.valid_moves: # type: ignore
+            new_board=board.copy() # type: ignore
+            self.rules.apply_move(new_board,valid_move) # type: ignore
+
+            if new_board.current_color==None: #Terminal State
+                child=TerminalNode()
+                child.exact_score=2*self.rules.white_win(new_board)-1
+                child.move=valid_move
+            else:
+                child=Leaf()
+                child.move=valid_move
+                if new_board.current_color=='White':
+                    child.team=1 # type: ignore
                 else:
-                    ancester.reward_sum+=1-value
-                ancester=ancester.parent
-                
+                    child.team=-1 # type: ignore
+                child.board=new_board
+                child.temporary_score=self.eval(new_board)
+
+            child.parent=node # type: ignore
+            node.children.append(child) # type: ignore
+
+        # ------------------- Init status 'solved ?' ------------------- #
+
+        self.update_solve(node)
+        
+        # ------------------- Init the score of the expanded node ------------------- #
+        if not(node.solved):
+            self.init_score(node)
+
+        # Return the node that has remplaced the leaf
+        return node # type: ignore
+
+    def update_solve(self,node):
+
+        if node.solved:
+            return
+
+        lose=True
+        win=False
+        team=node.team
+        for child in node.children:
+            if isinstance(child,Leaf):
+                lose=False  # Can't conlude that we lose if there is unexplored direction
+
+            elif isinstance(child,Node):     
+                if child.solved==False:
+                    lose=False 
+                else:
+                    if child.exact_score==team:
+                        win=True
+                        lose=False
+                        break
+            elif isinstance(child,TerminalNode):
+                if child.exact_score==team:
+                        win=True
+                        lose=False
+                        break
+        
+        assert not(lose) or not(win)
+        
+        if lose:
+
+            node.solved=True
+            node.exact_score=-team
+            node.n_simu=1
+            node.score_sum=node.exact_score
+            if not(isinstance(node,Root)):
+                self.update_solve(node.parent)
+
+        elif win:
+
+            node.solved=True
+            node.exact_score=team
+            node.n_simu=1
+            node.score_sum=node.exact_score
+            if not(isinstance(node,Root)):
+                self.update_solve(node.parent)
+
+    def backprop(self,node):
+
+        score=node.ucb_score()
+
+        ancester=node.parent
+        while not(isinstance(ancester,Root)):
+            ancester.n_simu+=1 # type: ignore
+            ancester.score_sum+=score # type: ignore
+            ancester=ancester.parent # type: ignore
+        ancester.n_simu+=1 # type: ignore
+        ancester.score_sum+=score # type: ignore
 
 
     def simulation(self):
 
-        # New Simulation 
-        board_simulation=self.true_board.copy()
         current_node=self.root
-
-        # Selection Part 
         depth=0
 
-        stopping_condition=(len(current_node.children)==0) 
-        assert isinstance(current_node,Node)
-        while not(stopping_condition):
-
-            k=self.select_child(current_node)
-            
-            move=current_node.moves[k]  # type: ignore
-            self.rules.apply_move(board_simulation,move)
-
-            current_node=current_node.children[k]  # type: ignore
-
-            stopping_condition=isinstance(current_node,TerminalNode) or len(current_node.children)==0 or current_node.n_simu==0
-
+        stopping_condition=False
+        first=True
+        while not(stopping_condition): 
+            current_node=self.select_child(current_node)
+            '''
+            if first:
+                print(current_node.move)
+                first=False
+            '''
+            stopping_condition=isinstance(current_node,TerminalNode) or isinstance(current_node,Leaf)
             depth+=1
 
         self.tree_depth=max(self.tree_depth,depth)
 
-        if isinstance(current_node,TerminalNode):
-                self.backprop(current_node)
+        if isinstance(current_node,Leaf):
+            current_node=self.expand(current_node)
+        self.backprop(current_node)    # type: ignore
 
-        elif current_node.n_simu==0 and depth>0:  # type: ignore
-            reward=self.eval(board_simulation)
-            current_node.n_simu=1  # type: ignore
-            current_node.reward_sum=reward  # type: ignore
-            self.backprop(current_node)
 
+    def observe_move(self,new_move):
+        new_board=self.root.board
+        self.rules.apply_move(new_board,new_move)
+
+        for child in self.root.children:
+            if child.move==new_move:
+                new_root=child
+                break
+        
+        if isinstance(new_root,Leaf): # type: ignore
+            #print('The Nex Root is a leaf :o')
+            self.root=Root(new_board)
+            self.expand(self.root)
+            self.tree_depth=0
+
+        elif isinstance(new_root,Node): # type: ignore
+            self.root=Root(new_board)
+            self.root.score_sum=new_root.score_sum 
+            self.root.n_simu=new_root.n_simu 
+            self.root.children=new_root.children 
+            self.root.team=new_root.team 
+            self.root.solved=new_root.solved
+            self.root.exact_score=new_root.exact_score  # type: ignore
+            self.tree_depth-=1
+            for child in self.root.children:
+                child.parent=self.root
         else:
-            # Expansion
-            self.expand(current_node,board_simulation)
-
-            # Evaluation
-            evaluated_child=self.eval_children(current_node,board_simulation)
-
-            # Backprop
-            for k in evaluated_child:
-                self.backprop(current_node.children[k])    # type: ignore
-
-
+            assert isinstance(new_root,TerminalNode) # type: ignore
+            self.root=Root(new_board)
 
     def ask_move(self,rules,board,displayer):
+
+        if self.verbose:
+            print('')
         start_simu_time=time()
         N_simu=0
         while time()-start_simu_time<self.simu_time or N_simu==0:
@@ -192,22 +286,41 @@ class GenericMCTS(GenericAgent):
             if displayer!=None:
                 displayer.do_nothing()
 
-
-        if self.verbose:
-            print(f"Nombre simulation {N_simu}")
-            print(f"Simulation/Seconde {int(N_simu/self.simu_time)}")
-            print(f"Tree depth : {self.tree_depth}")
-
+            if self.root.solved==True:
+                if self.root.exact_score==self.root.team:  # type: ignore
+                    if self.verbose:
+                        print('Checkmate!')
+                    break
         
-        if board.current_color=='White':
-            greedy_score=[child.white_score()  for child in self.root.children]
-        else:
-            greedy_score=[1-child.white_score()  for child in self.root.children]
+        self.simulations_counter_total+=N_simu
+        if self.verbose:
+            if self.root.solved:
+                print(f'Engame Solved, winner: {self.root.exact_score}')  # type: ignore
+            else:
+                print(f"Nombre simulation {N_simu}")
+                print(f"Simulation/Seconde {int(N_simu/self.simu_time)}")
+                print(f"Tree depth : {self.tree_depth}")
+            print('Selecting my move :')
+            k=0
+            team=self.root.team
+            for child in self.root.children:
+                if isinstance(child,Leaf):
+                    print(f'move : {child.move} = Leaf, won? : {(team*child.score()+1)/2}')
+                elif isinstance(child,TerminalNode):
+                    print(f'move : {child.move} = Terminal, won? : {(team*child.score()+1)/2}')  # type: ignore
+                else:
+                    if child.solved==True:
+                        print(f'move : {child.move} = Solved Node, won? : {(team*child.exact_score+1)/2}')
+                    else:
+                        print(f'move : {child.move} = Node, explored {child.n_simu}x, winrate : {(team*child.score()+1)/2}')
+                k+=1
 
+        team=self.root.team
+        greedy_score=[team*child.score()  for child in self.root.children]
         choice=argmax(array(greedy_score))
         
         if self.verbose:
-            print(f'Proba of winning, post tree search : {greedy_score[choice]}')
+            print(f'Proba of winning, post tree search : {greedy_score[choice]/2+0.5}')
             
-        return self.root.moves[choice]
+        return self.root.children[choice].move
             
