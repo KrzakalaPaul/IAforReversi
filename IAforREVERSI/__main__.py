@@ -1,57 +1,32 @@
 
 from agents.all_agents  import RandomAgent,FullRandomMCTS,EvalMCTS
-from reversi.heuristics import NaiveEval,Positions,Three,Four,Five
 
 ### Test time complexity
-
+"""
 from Test.time_complexity import heuristics,moves
 moves()
 heuristics()
-
+"""
 ### Plot Time vs Winrate
 """
 from arenas.plot import time_plot
 import numpy as np
-time_plot(N=4,T=np.linspace(1e-4,1e-2,10))
+time_plot(N=6,T=[1e-3,5*1e-3,1e-2,5*1e-2,1e-1])
 """
 ### LOADING AGENT :
-
-#agent1=FullRandomMCTS(simu_time=3,verbose=False)
-#agent2=FullRandomMCTS(simu_time=1)
-
-#eval_fct1=Five(N=8,save='C:\\Users\\33630\\Documents\\GitHub\\IAforReversi\\IAforREVERSI\\saves\\Five_run_0\\coef_8',scaling=True)
-#agent1=EvalMCTS(eval_fct1,c=5,simu_time=10,rollout_horizon=0, rollout_repeat=1 ,verbose=True)  # type: ignore
-
-#eval_fct2=Five(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\Five_run_0\\coef_8',scaling=True)
-#agent2=EvalMCTS(eval_fct2,simu_time=7,rollout_horizon=0, rollout_repeat=1 ,verbose=False)  # type: ignore
-
-agent1=FullRandomMCTS(simu_time=10,verbose=True)    # type: ignore
-#agent2=FullRandomMCTS(simu_time=1,verbose=True) 
-
-### PRECOMPUTING DATA SETS:
 """
-from training.data_set import CreateDataSet,LoadDataSet,UnionDataSet
-
-#from time import time
-#t=time()
-#winrate_1=CreateDataSet('test',RandomAgent(),RandomAgent(),n_game=1000,N=8)
-#print(time()-t)
-
-#UnionDataSet(['data_0','data_1','data_2','data_3'],'FiveNoScalingTraining')
+agent1=FullRandomMCTS(simu_time=0.1,verbose=True)    # type: ignore
+agent2=FullRandomMCTS(simu_time=1,verbose=True) 
 """
 ### TRAINING AGENT :
-"""
-from training.train_linear_eval import TrainLinearEvaluation
 
-N=8    
-t=3
-eval_to_train=Five(game_states=3,N=8,scaling=True)
+# Create Data set
+from training.data_set import generate_DSG,merge_from_name
 
-TrainLinearEvaluation(eval_to_train,H=0,k=1,t=t,n_eval=100,n_update=10,save=None,precomputed_data_set=None)
+merge_from_name('random_games',"random_games",'random_gamesx2')
 
-# Using Precomputed dataset for first step :
-#TrainLinearEvaluation(eval_to_train,H=0,k=1,t=t,n_eval=100,n_update=0,save=None,precomputed_data_set='All')
-"""
+
+
 ### COMPETITION BETWEEN AGENTS : 
 """
 from arenas.simulator import fight
@@ -64,8 +39,9 @@ fight(agent1,agent2,N=8,repeat=100,refresh_rate=10)  # type: ignore
 from arenas.game import game
 from agents.all_agents  import HumanAgent
 
-whiteplayer=agent1
+#whiteplayer=agent1
+whiteplayer=RandomAgent()
 blackplayer=HumanAgent()
 
-game(whiteplayer,blackplayer,N=8)
+game(whiteplayer,blackplayer,N=6)
 """

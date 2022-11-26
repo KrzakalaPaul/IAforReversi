@@ -1,85 +1,23 @@
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-import pickle
-
-from .rules import Rules
-from sklearn import neighbors
 from scipy import ndimage
 
 
-def sigmoid(x):
-    return 1/(1 + np.exp(-x))
+def naive(board,rules):
+    white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
+    if board.current_color=='White':
+        return white_score
+    else :
+        return 1-white_score
 
-class NaiveEval():
-    def __call__(self,board):
-        white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
-        if board.current_color=='White':
-            return white_score
-        else :
-            return 1-white_score
-
-
-class LinearEvaluation():
-    def  __init__(self,N=8,save=None,scaling=True):
-
-        self.N=N
-        lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
-        lr.intercept_= np.zeros((1,))
-        lr.classes_=np.array([0,1])
-        self.lr=lr  
-        if scaling:
-            self.model= make_pipeline(StandardScaler(),self.lr)
-        else:
-            self.model=self.lr
-        if save!=None:
-            self.load(save)
-        else:
-            self.lr.coef_= self.init_coefs()  # type: ignore
-    
-    def save(self,path):
-        pickle.dump(self.model, open(path, 'wb'))
-        #np.save(path,eval_fct.model.coef_)
-
-    def print(self):
-        print(self.lr.coef_)
-
-    def load(self,filename):
-        self.model=pickle.load(open(filename, 'rb'))
-
-    def __call__(self,board):
-        return self.model.predict_proba(self.features(board))[0,1].item()  # type: ignore
-
-
-class Positions(LinearEvaluation):
-
-    def __init__(self,N=8,save=None):
-        super().__init__(N=N,save=save)
-        n=N//2
-        self.dim=n*(n+1)//2
-
-    def init_coefs(self):                     # For N=8 :     1 2 3 4
-                                               #              2 5 6 7
-                                               #    	      3 6 8 9
-                                               #              4 7 9 10 
-        n=self.N//2
-        params=np.random.uniform(-1,1,n*(n+1)//2)  # type: ignore
-        params[0]=+3
-        params[1]=-1
-        params[4]=-1
-        return params.reshape((1,-1))
-    
-    def features(self,board):
-        n=self.N//2
-        matrix=board.matrix
-        matrix_sym=matrix[0:n,0:n]+np.flip(matrix[n:,0:n],axis=0)+np.flip(matrix[0:n,n:],axis=1)+np.flip(matrix[n:,n:],axis=(0,1))
-        matrix_sym_copy=matrix_sym.copy()
-        np.fill_diagonal(matrix_sym_copy, 0)
-        matrix_sym=matrix_sym+matrix_sym_copy.T
-        features=np.array([matrix_sym[i,j] for i in range(n) for j in range(i,n)])
-        return features.reshape(1, -1)
-
+def positions(board,rules):
+    n=rules.N//2
+    matrix=board.matrix
+    matrix_sym=matrix[0:n,0:n]+np.flip(matrix[n:,0:n],axis=0)+np.flip(matrix[0:n,n:],axis=1)+np.flip(matrix[n:,n:],axis=(0,1))
+    matrix_sym_copy=matrix_sym.copy()
+    np.fill_diagonal(matrix_sym_copy, 0)
+    matrix_sym=matrix_sym+matrix_sym_copy.T
+    features=np.array([matrix_sym[i,j] for i in range(n) for j in range(i,n)])
+    return features.reshape(1, -1)
 
 
 def mobility(board,rules):
@@ -100,7 +38,7 @@ def mobility(board,rules):
 neighbors_kernel=np.zeros((3,3))+1
 neighbors_kernel[1,1]=0
 
-def potential_mobility(board):
+def potential_mobility(board,rules):
 
     matrix=board.matrix
     empty=(matrix==0)
@@ -116,13 +54,13 @@ def potential_mobility(board):
     return (white_potential-black_potential)/(white_potential+black_potential)
 
 
-def corner_count(board): 
+def corner_count(board,rules): 
     matrix=board.matrix
     corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])/4
     return corners
 
 
-def precorners_count(board):
+def precorners_count(board,rules):
     matrix=board.matrix
     N=len(matrix)
     precorners=0
@@ -133,7 +71,7 @@ def precorners_count(board):
     return precorners
 
 
-def corner_stability(board): #Number of Stable Edge 
+def corner_stability(board,rules): #Number of Stable Edge 
         matrix=board.matrix
         N=len(matrix)
         corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])/4
@@ -259,108 +197,3 @@ def corner_stability(board): #Number of Stable Edge
 
         return np.sum(stable_matrix*matrix)-corners
 
-
-class Three(LinearEvaluation): 
-
-    def __init__(self,game_states=3,N=8,save=None,scaling=True):
-
-        self.time_codes=np.linspace(0,N**2,game_states+1)
-        self.game_states=game_states
-        self.dim=3*game_states
-        self.rules=Rules(N)
-
-        super().__init__(N=N,save=save,scaling=scaling)
-
-    def init_coefs(self):                   
-        params=np.array([1,1,1]*self.game_states)
-        return params.reshape((1,-1))
-
-    
-    def features(self,board):
-
-        n_moves=np.sum(np.abs(board.matrix))
-        
-        # Looking for time_code : 
-        t=0
-        while n_moves>self.time_codes[t+1]:
-            t+=1
-
-        mob=mobility(board,self.rules)
-        stable=corner_stability(board)
-        corners=corner_count(board)
-        features=np.zeros(self.dim)
-        features[3*t:3*t+3]=np.array([mob,corners,stable])
-
-        return features.reshape(1, -1)
-
-
-
-class Four(LinearEvaluation): 
-
-    def __init__(self,game_states=3,N=8,save=None,scaling=True):
-
-        self.time_codes=np.linspace(0,N**2,game_states+1)
-        self.game_states=game_states
-        self.dim=4*game_states
-        self.rules=Rules(N)
-
-        super().__init__(N=N,save=save,scaling=scaling)
-
-
-    def init_coefs(self):                   
-        params=np.array([1,1,1,-0.5]*self.game_states)
-        return params.reshape((1,-1))
-
-    def features(self,board):
-        
-        n_moves=np.sum(np.abs(board.matrix))
-        
-        # Looking for time_code : 
-        t=0
-        while n_moves>self.time_codes[t+1]:
-            t+=1
-         
-        mob=mobility(board,self.rules)
-        n_stable=corner_stability(board)
-        n_corners=corner_count(board)
-        n_precorners=precorners_count(board)
-
-        features=np.zeros(self.dim)
-        features[4*t:4*t+4]=np.array([mob,n_corners,n_precorners,n_stable])
-        return features.reshape(1, -1)
-
-    
-class Five(LinearEvaluation):
-
-    def __init__(self,game_states=3,N=8,save=None,scaling=True):
-
-        self.time_codes=np.linspace(0,N**2,game_states+1)
-        self.game_states=game_states
-        self.dim=5*game_states
-        self.rules=Rules(N)
-
-        super().__init__(N=N,save=save,scaling=scaling)
-
-
-    def init_coefs(self):                   
-        params=np.array([1,1,1,0.2,-0.2]*self.game_states)
-        return params.reshape((1,-1))
-
-    def features(self,board):
-        
-        n_moves=np.sum(np.abs(board.matrix))
-        
-        # Looking for time_code : 
-        t=0
-        while n_moves>self.time_codes[t+1]:
-            t+=1
-         
-        mob=mobility(board,self.rules)
-        pot_mob=potential_mobility(board)
-        n_stable=corner_stability(board)
-        n_corners=corner_count(board)
-        n_precorners=precorners_count(board)
-
-        features=np.zeros(self.dim)
-        features[5*t:5*t+5]=np.array([mob,pot_mob,n_corners,n_precorners,n_stable])
-        return features.reshape(1, -1)

@@ -1,89 +1,92 @@
-from reversi.board import Board
+import json
 import os 
-import numpy as np
 from arenas.simulator import simulator_with_save
 
-def CreateDataSet(name,Agent1,Agent2,n_game=100,N=8):
-    save_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves')
-    dataset_path=os.path.join(save_path, 'dataset\\'+name)
+###----------------------- Data Set of GAMES (as sequences of moves) ----------------------- ###
 
-    try: 
-        os.makedirs(dataset_path)
-    except OSError:
-        pass
+# Class :
 
-    data_matrix=[]
-    data_label=[]
-
-    Win_rate_1=0
-    Nb_games=0
-
-    for game_counter in range(n_game):
-
-        # Select Color 
-
-        if game_counter%2==0:
-            # Run Simulation with save
-            label,save=simulator_with_save(Agent1,Agent2,N=N)
-            Win_rate_1+=label
-            Nb_games+=1
-            
-        else:
-            # Run Simulation with save
-            label,save=simulator_with_save(Agent2,Agent1,N=N)
-            Win_rate_1+=1-label
-            Nb_games+=1
-
-        # Update Dataset
-        for board_save in save:
-            data_matrix.append(board_save.matrix)
-            data_label.append(label)
-
-        print(f"{int(100*game_counter/n_game)}%")
-        print(f' Win rate agent1 : {int(100*Win_rate_1/Nb_games)}%')
-
-    np.savez_compressed(os.path.join(dataset_path, 'matrices'),data_matrix)
-    np.save(os.path.join(dataset_path, 'labels'),np.array(data_label))
-
-    return Win_rate_1/Nb_games
-
-def UnionDataSet(names,union_name):
-
-    all_data_matrix=[]
-    all_data_label=[]
-
-    for name in names :
-        data_board,data_label=LoadDataSet(name)
-
-        for board,label in zip(data_board,data_label):
-            all_data_matrix.append(board.matrix)
-            all_data_label.append(label)
+class DataSet_Games():
+    def __init__(self,N):
+        self.N=N
+        self.game_lists=[]
+        self.results_list=[]
     
-    save_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves')
-    dataset_path=os.path.join(save_path, 'dataset\\'+union_name)
+    def add(self,game,result):
+        self.game_lists.append(game)
+        self.results_list.append(result)
 
-    try: 
-        os.makedirs(dataset_path)
-    except OSError:
-        pass
-
-    np.savez_compressed(os.path.join(dataset_path, 'matrices'),all_data_matrix)
-    np.save(os.path.join(dataset_path, 'labels'),np.array(all_data_label))
-        
-
-def LoadDataSet(name):
+    def save(self,name='unnamed_DSG'):
+        file_path=self.format_path_save(name)
+        dic={'games':self.game_lists,'results':self.results_list}
+        with open(file_path, 'w') as f:
+            json.dump(dic,f)
     
-    save_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves')
-    dataset_path=os.path.join(save_path, 'dataset\\'+name)
+    def load(self,name='unnamed_DSG'):
+        file_path=self.format_path_load(name)
 
-    data_label=np.load(os.path.join(dataset_path, 'labels.npy'))
-    n=len(data_label)
-    loaded_matrices =np.load(os.path.join(dataset_path, 'matrices.npz'))
-    data_board=[]
-    matrices=loaded_matrices[f'arr_0']
+        with open(file_path) as f:
+            dic = json.load(f)
+        self.game_lists=dic['games']
+        self.results_list=dic['results']
 
-    for i in range(n):
-        board=Board(matrix=matrices[i],current_color='not saved')
-        data_board.append(board)
+    def format_path_save(self,name):
+        update_counter=0
+        folder_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves\\datasets')
+        file_path=os.path.join(folder_path,name+'.json')
 
-    return data_board,data_label
+        if os.path.isfile(file_path):
+            file_path=os.path.join(folder_path,name+f'_{update_counter}.json')
+            while os.path.isfile(file_path):
+                update_counter+=1
+                file_path=os.path.join(folder_path,name+f'_{update_counter}.json')
+        return file_path
+
+    def format_path_load(self,name):
+        folder_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves\\datasets')
+        file_path=os.path.join(folder_path,name+'.json')
+        return file_path
+
+
+# Associated Functions:
+
+def generate_DSG(Agent1,Agent2,N,N_games):
+
+    DSG=DataSet_Games(N)
+
+    for _ in range(N_games//2):
+        white_agent=Agent1
+        black_agent=Agent2
+        winner,game=simulator_with_save(white_agent,black_agent,N=N)
+        DSG.add(game,winner)
+
+    for _ in range(N_games-N_games//2):
+        white_agent=Agent2
+        black_agent=Agent1
+        winner,game=simulator_with_save(white_agent,black_agent,N=N)
+        DSG.add(game,winner)
+
+    return DSG
+
+def merge_DSG(DSG1:DataSet_Games,DSG2:DataSet_Games):
+    assert DSG1.N==DSG2.N
+    DSG=DataSet_Games(DSG1.N)
+
+    for game,result in zip(DSG2.game_lists,DSG2.results_list):
+        DSG.add(game,result)
+
+    for game,result in zip(DSG2.game_lists,DSG2.results_list):
+        DSG.add(game,result)
+
+    return DSG
+    
+def merge_from_name(name1,name2,newname,N=8):
+    DSG1=DataSet_Games(N)
+    DSG1.load(name1)
+    DSG2=DataSet_Games(N)
+    DSG2.load(name2)
+    DSG=merge_DSG(DSG1,DSG2)
+    DSG.save(newname)
+
+
+

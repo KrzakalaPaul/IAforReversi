@@ -4,6 +4,8 @@ class Board():
         self.current_color=current_color
         self.valid_moves=[]
         self.frontier='Uncomputed'
+        self.skiped_white=0
+        self.skiped_black=0
 
     def copy(self):
         board_copy=Board(self.matrix.copy(),self.current_color)

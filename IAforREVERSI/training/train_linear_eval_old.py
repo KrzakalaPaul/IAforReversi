@@ -6,7 +6,7 @@ from numpy.random import randint
 from arenas.simulator import simulator_with_save
 from tqdm import tqdm
 from copy import deepcopy
-from .data_set import LoadDataSet
+from .data_set_old import LoadDataSet
 
 from sklearn.covariance import empirical_covariance
 np.set_printoptions(precision=1)

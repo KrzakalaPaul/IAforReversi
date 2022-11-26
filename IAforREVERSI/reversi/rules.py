@@ -212,12 +212,19 @@ class Rules():
         if len(new_moves)==0:
 
             if board.current_color=='White':
+                skip_white=1
+                skip_black=0
                 board.current_color='Black'
+
             else:
                 board.current_color='White'
+                skip_black=1
+                skip_white=0
 
             new_moves=self.list_valid_moves(board)
             board.valid_moves=new_moves
+            board.skiped_white+=skip_white
+            board.skiped_black+=skip_black
 
             if len(new_moves)==0:
                 board.current_color=None

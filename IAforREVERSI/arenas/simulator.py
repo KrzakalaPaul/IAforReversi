@@ -52,8 +52,6 @@ def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None):
 
     while board.current_color in ['White','Black'] :
 
-        save.append(board.copy())
-        
         current_player=players[board.current_color]
         move=current_player.ask_move(rules,board,None)
         #assert rules.check_valid(board,move)
@@ -61,6 +59,7 @@ def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None):
         
         WhiteAgent.observe_move(move)
         BlackAgent.observe_move(move)
+        save.append(move)
 
         #if not(isinstance(WhiteAgent,RandomAgent) and isinstance(BlackAgent,RandomAgent)):
         #    print(board.matrix,board.current_color)
