@@ -3,11 +3,11 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+import os 
+from reversi.heuristics import*
+from reversi.rules import Rules
 
 import pickle
-from reversi.rules import Rules
-from sklearn import neighbors
-from reversi.heuristics import*
 
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
@@ -16,35 +16,72 @@ def sigmoid(x):
 class LinearEvaluation():
     def  __init__(self,features_list):
 
-        self.N=N
-        lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
-        lr.intercept_= np.zeros((1,))
-        lr.classes_=np.array([0,1])
-        self.lr=lr  
-        if scaling:
-            self.model= make_pipeline(StandardScaler(),self.lr)
-        else:
-            self.model=self.lr
-        if save!=None:
-            self.load(save)
-        else:
-            self.lr.coef_= self.init_coefs()  # type: ignore
+        self.features_list=features_list
+        self.dim=0
+        for feature in features_list:
+            self.dim+=feature.dim
+
+        self.lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
+        self.lr.intercept_= np.zeros((1,))
+        #self.lr.coef_= np.zeros((1,self.dim))
+        self.lr.classes_=np.array([0,1])
+
+        self.scaler=StandardScaler()
+        #self.scaler.mean_=np.zeros((self.dim,))
+        #self.scaler.var_=np.zeros((self.dim,))+1
+
+        self.model= make_pipeline(StandardScaler(),self.lr)
+
+
+    def feature_map(self,board):
+        feats=[]
+        for feature in self.features_list:
+            feats.append(np.array(feature(board)))
+        return np.concatenate(feats)
+
+
+    def __call__(self,board):
+        feats=self.feature_map(board).reshape(-1,1)
+        return self.model.predict_proba(feats)[0,1].item()  # type: ignore
+
+    def format_path_save(self,name):
+        update_counter=0
+        folder_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves\\features')
+        file_path=os.path.join(folder_path,name)
+
+        if os.path.isfile(file_path):
+            file_path=os.path.join(folder_path,name+f'_{update_counter}')
+            while os.path.isfile(file_path):
+                update_counter+=1
+                file_path=os.path.join(folder_path,name+f'_{update_counter}')
+        return file_path
+
+    def format_path_load(self,name):
+        folder_path = os.path.join(os.getcwd(), 'IAforREVERSI\\saves\\features')
+        file_path=os.path.join(folder_path,name)
+        return file_path
     
-    def save(self,path):
-        pickle.dump(self.model, open(path, 'wb'))
-        #np.save(path,eval_fct.model.coef_)
+    def save(self,name):
+        file_path=self.format_path_save(name)
+        pickle.dump(self.model, open(file_path, 'wb'))
+    
+    def load(self,name):
+        file_path=self.format_path_load(name)
+        self.model=pickle.load(open(file_path, 'rb'))
 
     def print(self):
         print(self.lr.coef_)
 
-    def load(self,filename):
-        self.model=pickle.load(open(filename, 'rb'))
 
-    def __call__(self,board):
-        return self.model.predict_proba(self.features(board))[0,1].item()  # type: ignore
+class MyEval(LinearEvaluation):
+
+    def  __init__(self,N):
+        rules=Rules(N=N)
+        super().__init__([mobility(rules),potential_mobility(rules),corner_count(rules),precorners_count(rules),corner_stability(rules)])
 
 
 
+'''
     
 class Five(LinearEvaluation):
 
@@ -80,3 +117,4 @@ class Five(LinearEvaluation):
         features=np.zeros(self.dim)
         features[5*t:5*t+5]=np.array([mob,pot_mob,n_corners,n_precorners,n_stable])
         return features.reshape(1, -1)
+'''

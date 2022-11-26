@@ -21,10 +21,22 @@ agent2=FullRandomMCTS(simu_time=1,verbose=True)
 ### TRAINING AGENT :
 
 # Create Data set
-from training.data_set import generate_DSG,merge_from_name
+#from training.data_set import generate_DSG,merge_from_name
+#merge_from_name('random_games',"random_games",'random_gamesx2')
 
-merge_from_name('random_games',"random_games",'random_gamesx2')
+from training.linear_eval import MyEval
 
+eval=MyEval(N=8)
+eval.save('test_eval')
+
+eval=MyEval(N=8)
+eval.load('test_eval')
+
+from reversi.rules import Rules
+
+rules=Rules(N=8)
+board=rules.init_board()
+print(eval(board))
 
 
 ### COMPETITION BETWEEN AGENTS : 

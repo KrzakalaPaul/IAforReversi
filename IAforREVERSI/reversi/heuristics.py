@@ -2,78 +2,115 @@ import numpy as np
 from scipy import ndimage
 
 
-def naive(board,rules):
-    white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
-    if board.current_color=='White':
-        return white_score
-    else :
-        return 1-white_score
-
-def positions(board,rules):
-    n=rules.N//2
-    matrix=board.matrix
-    matrix_sym=matrix[0:n,0:n]+np.flip(matrix[n:,0:n],axis=0)+np.flip(matrix[0:n,n:],axis=1)+np.flip(matrix[n:,n:],axis=(0,1))
-    matrix_sym_copy=matrix_sym.copy()
-    np.fill_diagonal(matrix_sym_copy, 0)
-    matrix_sym=matrix_sym+matrix_sym_copy.T
-    features=np.array([matrix_sym[i,j] for i in range(n) for j in range(i,n)])
-    return features.reshape(1, -1)
+class heuristic():
+    def __init__(self,rules):
+        self.rules=rules
+        self.dim=None
 
 
-def mobility(board,rules):
+class naive(heuristic):
+    def __init__(self,rules):
+        self.rules=rules
+        self.dim=1
+    def __call__(self,board):
+        white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
+        if board.current_color=='White':
+            return white_score
+        else :
+            return 1-white_score
 
-    if board.current_color=='Black':
-        black_mobility=len(board.valid_moves)
-        board_white=board.copy()
-        board_white.current_color='White'
-        white_mobility=len(rules.list_valid_moves(board_white))
-    else:
-        white_mobility=len(board.valid_moves)
-        board_black=board.copy()
-        board_black.current_color='Black'
-        black_mobility=len(rules.list_valid_moves(board_black))
+class positions(heuristic):
+    def __init__(self,rules):
+        self.rules=rules
+        self.n=rules.N//2
+        self.dim=self.n*(self.n+1)//2
 
-    return (white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)
-
-neighbors_kernel=np.zeros((3,3))+1
-neighbors_kernel[1,1]=0
-
-def potential_mobility(board,rules):
-
-    matrix=board.matrix
-    empty=(matrix==0)
-
-    black_matrix=np.where(matrix==-1,1,0)
-    black_adj=ndimage.convolve(black_matrix, neighbors_kernel, mode='constant', cval=0)
-    white_potential=(black_adj*empty>0).sum()
-
-    white_matrix=np.where(matrix==1,1,0)
-    white_adj=ndimage.convolve(white_matrix, neighbors_kernel, mode='constant', cval=0)
-    black_potential=(white_adj*empty>0).sum()
-
-    return (white_potential-black_potential)/(white_potential+black_potential)
-
-
-def corner_count(board,rules): 
-    matrix=board.matrix
-    corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])/4
-    return corners
-
-
-def precorners_count(board,rules):
-    matrix=board.matrix
-    N=len(matrix)
-    precorners=0
-    precorners+=(matrix[1,1]+matrix[1,0]+matrix[0,1])*(1-np.abs(matrix[0,0]))
-    precorners+=(matrix[-2,-2]+matrix[-1,-2]+matrix[-2,-1])*(1-np.abs(matrix[-1,-1]))
-    precorners+=(matrix[0,-2]+matrix[1,-2]+matrix[1,-1])*(1-np.abs(matrix[0,-1]))
-    precorners+=(matrix[-2,0]+matrix[-2,1]+matrix[-1,1])*(1-np.abs(matrix[-1,0]))
-    return precorners
-
-
-def corner_stability(board,rules): #Number of Stable Edge 
+    def __call__(self,board):
+        n=self.n
         matrix=board.matrix
-        N=len(matrix)
+        matrix_sym=matrix[0:n,0:n]+np.flip(matrix[n:,0:n],axis=0)+np.flip(matrix[0:n,n:],axis=1)+np.flip(matrix[n:,n:],axis=(0,1))
+        matrix_sym_copy=matrix_sym.copy()
+        np.fill_diagonal(matrix_sym_copy, 0)
+        matrix_sym=matrix_sym+matrix_sym_copy.T
+        features=[matrix_sym[i,j] for i in range(n) for j in range(i,n)]
+        return features
+
+class mobility(heuristic):
+    def __init__(self,rules):
+        self.rules=rules
+        self.dim=1
+
+    def __call__(self,board):
+        if board.current_color=='Black':
+            black_mobility=len(board.valid_moves)
+            board_white=board.copy()
+            board_white.current_color='White'
+            white_mobility=len(self.rules.list_valid_moves(board_white))
+        else:
+            white_mobility=len(board.valid_moves)
+            board_black=board.copy()
+            board_black.current_color='Black'
+            black_mobility=len(self.rules.list_valid_moves(board_black))
+        return (white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)
+
+
+
+class potential_mobility(heuristic):
+    def __init__(self,rules):
+        self.dim=1
+        self.neighbors_kernel=np.zeros((3,3))+1
+        self.neighbors_kernel[1,1]=0
+
+    def __call__(self,board):
+       
+        matrix=board.matrix
+        empty=(matrix==0)
+
+        black_matrix=np.where(matrix==-1,1,0)
+        black_adj=ndimage.convolve(black_matrix, self.neighbors_kernel, mode='constant', cval=0)
+        white_potential=(black_adj*empty>0).sum()
+
+        white_matrix=np.where(matrix==1,1,0)
+        white_adj=ndimage.convolve(white_matrix, self.neighbors_kernel, mode='constant', cval=0)
+        black_potential=(white_adj*empty>0).sum()
+
+        return (white_potential-black_potential)/(white_potential+black_potential)
+
+
+class corner_count(heuristic):
+
+    def __init__(self,rules):
+        self.dim=1
+    
+    def __call__(self,board):
+        matrix=board.matrix
+        corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])/4
+        return corners
+
+class precorners_count(heuristic):
+
+    def __init__(self,rules):
+        self.dim=1
+    
+    def __call__(self,board):
+        matrix=board.matrix
+        precorners=0
+        precorners+=(matrix[1,1]+matrix[1,0]+matrix[0,1])*(1-np.abs(matrix[0,0]))
+        precorners+=(matrix[-2,-2]+matrix[-1,-2]+matrix[-2,-1])*(1-np.abs(matrix[-1,-1]))
+        precorners+=(matrix[0,-2]+matrix[1,-2]+matrix[1,-1])*(1-np.abs(matrix[0,-1]))
+        precorners+=(matrix[-2,0]+matrix[-2,1]+matrix[-1,1])*(1-np.abs(matrix[-1,0]))
+        return precorners
+
+    
+class corner_stability(heuristic):
+    def __init__(self,rules):
+        self.N=rules.N
+        self.dim=1
+
+    def __call__(self,board):
+
+        matrix=board.matrix
+        N=self.N
         corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])/4
 
         line_min=0
@@ -85,10 +122,6 @@ def corner_stability(board,rules): #Number of Stable Edge
                 line_min+=1
             else:
                 full=False
-
-        if line_min==N:
-            print('Evaluating A Final Board')
-
         
         line_max=N
         full=True
@@ -99,7 +132,6 @@ def corner_stability(board,rules): #Number of Stable Edge
                 line_max-=1
             else:
                 full=False
-
 
         col_min=0
         full=True
@@ -188,7 +220,6 @@ def corner_stability(board,rules): #Number of Stable Edge
                 
                 limit=a
                 b+=1
-
 
         stable_matrix=np.zeros_like(matrix)+1    # 1 for stable, 0 for instable 
         stable_matrix[line_min:line_max,col_min:col_max]=mini_stable_matrix
