@@ -8,22 +8,15 @@ from .rules import Rules
 from sklearn import neighbors
 from scipy import ndimage
 
-# Rules : Heuristics returns the probability of that white wins and must me symetrical 
-# Meaning that P(plateau)=1-P(plateau + swap color)
-# When P(x)=sigmoid(linear_fct(x)) this mean  linear_fct(x)=-linear_fct(swap x)
-
-# BASIC CLASS
 
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
 
 class NaiveEval():
-
     def __call__(self,board):
         white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
         if board.current_color=='White':
             return white_score
-
         else :
             return 1-white_score
 
@@ -40,8 +33,6 @@ class LinearEvaluation():
             self.model= make_pipeline(StandardScaler(),self.lr)
         else:
             self.model=self.lr
-        #self.model=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
-
         if save!=None:
             self.load(save)
         else:
@@ -82,10 +73,6 @@ class Positions(LinearEvaluation):
     def features(self,board):
         n=self.N//2
         matrix=board.matrix
-        #print(matrix[0:n-1,0:n-1])
-        #print(np.flip(matrix[n-1:,0:n-1],axis=0))
-        #print(np.flip(matrix[0:n-1,n-1:],axis=1))
-        #print(np.flip(matrix[n-1:,n-1:],axis=(0,1)))
         matrix_sym=matrix[0:n,0:n]+np.flip(matrix[n:,0:n],axis=0)+np.flip(matrix[0:n,n:],axis=1)+np.flip(matrix[n:,n:],axis=(0,1))
         matrix_sym_copy=matrix_sym.copy()
         np.fill_diagonal(matrix_sym_copy, 0)
@@ -94,10 +81,6 @@ class Positions(LinearEvaluation):
         return features.reshape(1, -1)
 
 
-# BASIC HEURISTICS
-
-#from sklearn import neighbors
-#from scipy import ndimage
 
 def mobility(board,rules):
 

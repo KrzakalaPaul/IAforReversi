@@ -3,16 +3,16 @@ from agents.all_agents  import RandomAgent,FullRandomMCTS,EvalMCTS
 from reversi.heuristics import NaiveEval,Positions,Three,Four,Five
 
 ### Test time complexity
-"""
+
 from Test.time_complexity import heuristics,moves
 moves()
 heuristics()
-"""
+
 ### Plot Time vs Winrate
 """
 from arenas.plot import time_plot
 import numpy as np
-time_plot(N=6,T=[1e-1])
+time_plot(N=4,T=np.linspace(1e-4,1e-2,10))
 """
 ### LOADING AGENT :
 
@@ -25,7 +25,7 @@ time_plot(N=6,T=[1e-1])
 #eval_fct2=Five(N=8,save='D:\\Documents\\AAA\\IAforReversi\\IAforREVERSI\\saves\\Five_run_0\\coef_8',scaling=True)
 #agent2=EvalMCTS(eval_fct2,simu_time=7,rollout_horizon=0, rollout_repeat=1 ,verbose=False)  # type: ignore
 
-agent1=FullRandomMCTS(simu_time=10,verbose=True)  # type: ignore
+agent1=FullRandomMCTS(simu_time=10,verbose=True)    # type: ignore
 #agent2=FullRandomMCTS(simu_time=1,verbose=True) 
 
 ### PRECOMPUTING DATA SETS:
@@ -60,7 +60,7 @@ from time import time
 fight(agent1,agent2,N=8,repeat=100,refresh_rate=10)  # type: ignore
 """
 ### PLAYING THE GAME AGAINST AN AGENT : 
-
+"""
 from arenas.game import game
 from agents.all_agents  import HumanAgent
 
@@ -68,3 +68,4 @@ whiteplayer=agent1
 blackplayer=HumanAgent()
 
 game(whiteplayer,blackplayer,N=8)
+"""

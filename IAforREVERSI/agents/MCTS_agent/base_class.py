@@ -14,6 +14,7 @@ class Root():
             self.team=-1
         self.board=board
         self.solved=False
+        self.exact_score=None
 
 class Leaf():   
     def __init__(self):
@@ -316,7 +317,10 @@ class GenericMCTS(GenericAgent):
                 k+=1
 
         team=self.root.team
-        greedy_score=[team*child.score()  for child in self.root.children]
+        if self.root.solved and self.root.exact_score!=self.root.team:
+            greedy_score=[team*child.ucb_score()  for child in self.root.children]
+        else:
+            greedy_score=[team*child.score()  for child in self.root.children]
         choice=argmax(array(greedy_score))
         
         if self.verbose:
