@@ -15,9 +15,9 @@ class naive(heuristic):
     def __call__(self,board):
         white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
         if board.current_color=='White':
-            return white_score
+            return [white_score]
         else :
-            return 1-white_score
+            return [1-white_score]
 
 class positions(heuristic):
     def __init__(self,rules):
@@ -33,7 +33,7 @@ class positions(heuristic):
         np.fill_diagonal(matrix_sym_copy, 0)
         matrix_sym=matrix_sym+matrix_sym_copy.T
         features=[matrix_sym[i,j] for i in range(n) for j in range(i,n)]
-        return features
+        return [features]
 
 class mobility(heuristic):
     def __init__(self,rules):
@@ -51,7 +51,7 @@ class mobility(heuristic):
             board_black=board.copy()
             board_black.current_color='Black'
             black_mobility=len(self.rules.list_valid_moves(board_black))
-        return (white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)
+        return [(white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)]
 
 
 
@@ -74,7 +74,7 @@ class potential_mobility(heuristic):
         white_adj=ndimage.convolve(white_matrix, self.neighbors_kernel, mode='constant', cval=0)
         black_potential=(white_adj*empty>0).sum()
 
-        return (white_potential-black_potential)/(white_potential+black_potential)
+        return [(white_potential-black_potential)/(white_potential+black_potential)]
 
 
 class corner_count(heuristic):
@@ -85,7 +85,7 @@ class corner_count(heuristic):
     def __call__(self,board):
         matrix=board.matrix
         corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])/4
-        return corners
+        return [corners]
 
 class precorners_count(heuristic):
 
@@ -99,7 +99,7 @@ class precorners_count(heuristic):
         precorners+=(matrix[-2,-2]+matrix[-1,-2]+matrix[-2,-1])*(1-np.abs(matrix[-1,-1]))
         precorners+=(matrix[0,-2]+matrix[1,-2]+matrix[1,-1])*(1-np.abs(matrix[0,-1]))
         precorners+=(matrix[-2,0]+matrix[-2,1]+matrix[-1,1])*(1-np.abs(matrix[-1,0]))
-        return precorners
+        return [precorners]
 
     
 class corner_stability(heuristic):
@@ -226,5 +226,5 @@ class corner_stability(heuristic):
 
         corners=(matrix[0,0]+matrix[-1,0]+matrix[0,-1]+matrix[-1,-1])
 
-        return np.sum(stable_matrix*matrix)-corners
+        return [np.sum(stable_matrix*matrix)-corners]
 

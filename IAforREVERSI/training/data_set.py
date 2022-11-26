@@ -1,6 +1,8 @@
 import json
 import os 
 from arenas.simulator import simulator_with_save
+from reversi.rules import Rules
+import numpy as np
 
 ###----------------------- Data Set of GAMES (as sequences of moves) ----------------------- ###
 
@@ -87,6 +89,5 @@ def merge_from_name(name1,name2,newname,N=8):
     DSG2.load(name2)
     DSG=merge_DSG(DSG1,DSG2)
     DSG.save(newname)
-
 
 

@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler
 import os 
 from reversi.heuristics import*
 from reversi.rules import Rules
+from training.data_set import DataSet_Games
 
 import pickle
 
@@ -36,12 +37,15 @@ class LinearEvaluation():
     def feature_map(self,board):
         feats=[]
         for feature in self.features_list:
-            feats.append(np.array(feature(board)))
-        return np.concatenate(feats)
+            feats+=feature(board)
+        return np.array(feats)
 
+    def fit(self,DSG):
+        X,y=ConvertToDSF(DSG,self)
+        self.model.fit(X=X,y=y)
 
     def __call__(self,board):
-        feats=self.feature_map(board).reshape(-1,1)
+        feats=self.feature_map(board).reshape(1,-1)
         return self.model.predict_proba(feats)[0,1].item()  # type: ignore
 
     def format_path_save(self,name):
@@ -72,6 +76,31 @@ class LinearEvaluation():
     def print(self):
         print(self.lr.coef_)
 
+from numpy.random import randint
+
+def ConvertToDSF(DSG:DataSet_Games,eval:LinearEvaluation):
+    N=DSG.N
+    rules=Rules(N=N)
+    d=eval.dim
+    X=[]
+    y=[]
+    for game,results in zip(DSG.game_lists,DSG.results_list):
+        board=rules.init_board()
+
+        label=results
+        if label==0.5:
+            label=randint(2)
+        label=int(label)
+
+        for move in game[:-1]:
+            X.append(eval.feature_map(board).reshape((1,-1)))
+            y.append(label)
+            rules.apply_move(board,move)
+    X=np.concatenate(X)
+    y=np.array(y)
+    return X,y
+        
+
 
 class MyEval(LinearEvaluation):
 
@@ -82,7 +111,6 @@ class MyEval(LinearEvaluation):
 
 
 '''
-    
 class Five(LinearEvaluation):
 
     def __init__(self,game_states=3,N=8,save=None,scaling=True):
