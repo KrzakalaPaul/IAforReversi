@@ -54,9 +54,9 @@ class mobility(heuristic):
         return [(white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)]
 
 
-
 class potential_mobility(heuristic):
     def __init__(self,rules):
+        self.rules=rules
         self.dim=1
         self.neighbors_kernel=np.zeros((3,3))+1
         self.neighbors_kernel[1,1]=0
@@ -80,6 +80,7 @@ class potential_mobility(heuristic):
 class corner_count(heuristic):
 
     def __init__(self,rules):
+        self.rules=rules
         self.dim=1
     
     def __call__(self,board):
@@ -90,6 +91,7 @@ class corner_count(heuristic):
 class precorners_count(heuristic):
 
     def __init__(self,rules):
+        self.rules=rules
         self.dim=1
     
     def __call__(self,board):
@@ -101,9 +103,17 @@ class precorners_count(heuristic):
         precorners+=(matrix[-2,0]+matrix[-2,1]+matrix[-1,1])*(1-np.abs(matrix[-1,0]))
         return [precorners]
 
+class skiped(heuristic):
+    def __init__(self,rules):
+        self.rules=rules
+        self.dim=1
+    
+    def __call__(self,board):
+        return [(board.skiped_black-board.skiped_white)/(board.skiped_black-board.skiped_white+1e-6)]
     
 class corner_stability(heuristic):
     def __init__(self,rules):
+        self.rules=rules
         self.N=rules.N
         self.dim=1
 

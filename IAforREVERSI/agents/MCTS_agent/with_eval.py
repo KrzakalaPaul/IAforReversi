@@ -2,15 +2,17 @@ from agents.MCTS_agent.full_random import FullRandomMCTS
 from agents.MCTS_agent.base_class import GenericMCTS
 from agents.random_agent.random_class import RandomAgent
 from arenas.simulator import finite_horizon_simulator
+from .base_class import TerminalNode
 from numpy import sqrt
 
 class EvalMCTS(FullRandomMCTS):
 
-    def __init__(self,eval_fct,simu_time=1,c=sqrt(2), rollout_horizon=0, rollout_repeat=1 ,verbose=True):
+    def __init__(self,eval_fct,simu_time=1,c=sqrt(2),n_simu_init=2, rollout_horizon=0, rollout_repeat=1 ,verbose=True):
         super().__init__(c=c,simu_time=simu_time,verbose=verbose)
         self.c=c
         self.eval_fct=eval_fct
         self.rollout_agent=RandomAgent
+        self.n_simu_init=n_simu_init
 
         self.H=rollout_horizon
         self.k=rollout_repeat
@@ -24,15 +26,10 @@ class EvalMCTS(FullRandomMCTS):
             horizon_board=finite_horizon_simulator(self.rollout_agent(),self.rollout_agent(),N=self.rules.N,board=board_to_eval.copy(),horizon=self.H)
 
             if horizon_board.current_color==None:
-                white_value=self.rules.white_win(horizon_board)
+                score=2*self.rules.white_win(horizon_board)-1
             else:
-                white_value=self.eval_fct(horizon_board)
-
-            if board_to_eval.current_color=='White':
-                avg_score+= white_value
-
-            else :
-                avg_score+= 1-white_value
+                score=2*self.eval_fct(horizon_board)-1
+            avg_score+=avg_score
 
         return avg_score/self.k
 
@@ -53,8 +50,8 @@ class EvalMCTS(FullRandomMCTS):
         children_scores=[]
         for child in node.children:
             if not(isinstance(child,TerminalNode)):
-                children_scores.append(child.score())
-        node.n_simu=1 
+                children_scores.append(child.ucb_score())
+        node.n_simu=self.n_simu_init
         team=node.team # type: ignore
         minimax_score=max([team*score for score in children_scores])
         node.score_sum=team*self.n_simu_init*minimax_score # type: ignore

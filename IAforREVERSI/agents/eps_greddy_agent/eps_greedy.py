@@ -25,11 +25,11 @@ class GreedyAgent(GenericAgent):
         values=[]
         for move in board.valid_moves:
             new_board=board.copy()
+            rules.apply_move(new_board,move)
 
             if new_board.current_color==None:
-                if 
+                values.append(rules.white_win(new_board))
+            else:
+                values.append(self.eval(new_board))
 
-            rules.apply_move(new_board,move)
-            values.append(self.eval(new_board))
-
-        return board.valid_moves[np.argmax(np.array(values))]
+        return board.valid_moves[np.argmax(team*np.array(values))]

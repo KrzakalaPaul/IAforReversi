@@ -1,5 +1,6 @@
 
 import numpy as np
+np.set_printoptions(precision=2)
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -15,30 +16,44 @@ def sigmoid(x):
 
 
 class LinearEvaluation():
-    def  __init__(self,features_list):
+    def  __init__(self,features_list,t_augmentation):
 
         self.features_list=features_list
-        self.dim=0
+        self.nat_dim=0
         for feature in features_list:
-            self.dim+=feature.dim
+            self.nat_dim+=feature.dim
+        self.dim=self.nat_dim*t_augmentation
+        N=features_list[0].rules.N
+        self.time_codes=np.linspace(0,N**2,t_augmentation+1)
 
         self.lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
         self.lr.intercept_= np.zeros((1,))
         #self.lr.coef_= np.zeros((1,self.dim))
         self.lr.classes_=np.array([0,1])
 
-        self.scaler=StandardScaler()
-        #self.scaler.mean_=np.zeros((self.dim,))
+        self.scaler=StandardScaler(with_mean=False)
         #self.scaler.var_=np.zeros((self.dim,))+1
 
-        self.model= make_pipeline(StandardScaler(),self.lr)
-
+        self.model= make_pipeline(self.scaler,self.lr)
+        #self.model= self.lr
 
     def feature_map(self,board):
+
+        n_moves=np.sum(np.abs(board.matrix))
+        # Looking for time_code : 
+        t=0
+        while n_moves>self.time_codes[t+1]:
+            t+=1
+
         feats=[]
         for feature in self.features_list:
             feats+=feature(board)
-        return np.array(feats)
+        feats=np.array(feats)
+
+        augmented_feats=np.zeros(self.dim)
+        augmented_feats[self.nat_dim*t:self.nat_dim*t+self.nat_dim]=feats
+
+        return augmented_feats
 
     def fit(self,DSG):
         X,y=ConvertToDSF(DSG,self)
@@ -74,7 +89,15 @@ class LinearEvaluation():
         self.model=pickle.load(open(file_path, 'rb'))
 
     def print(self):
-        print(self.lr.coef_)
+        
+        for t in range(len(self.time_codes)-1):
+            
+            var=self.scaler.var_[self.nat_dim*t:self.nat_dim*t+self.nat_dim]  # type: ignore
+            coefs=self.lr.coef_[0,self.nat_dim*t:self.nat_dim*t+self.nat_dim]
+
+            print(f'Turns {int(self.time_codes[t])} to {int(self.time_codes[t+1])}...')
+            print(f'var: {var}')
+            print(f'coefs: {coefs}')
 
 from numpy.random import randint
 
@@ -93,6 +116,7 @@ def ConvertToDSF(DSG:DataSet_Games,eval:LinearEvaluation):
         label=int(label)
 
         for move in game[:-1]:
+            move=tuple(move)
             X.append(eval.feature_map(board).reshape((1,-1)))
             y.append(label)
             rules.apply_move(board,move)
@@ -104,45 +128,6 @@ def ConvertToDSF(DSG:DataSet_Games,eval:LinearEvaluation):
 
 class MyEval(LinearEvaluation):
 
-    def  __init__(self,N):
+    def  __init__(self,N,t_augmentation=3):
         rules=Rules(N=N)
-        super().__init__([mobility(rules),potential_mobility(rules),corner_count(rules),precorners_count(rules),corner_stability(rules)])
-
-
-
-'''
-class Five(LinearEvaluation):
-
-    def __init__(self,game_states=3,N=8,save=None,scaling=True):
-
-        self.time_codes=np.linspace(0,N**2,game_states+1)
-        self.game_states=game_states
-        self.dim=5*game_states
-        self.rules=Rules(N)
-
-        super().__init__(N=N,save=save,scaling=scaling)
-
-
-    def init_coefs(self):                   
-        params=np.array([1,1,1,0.2,-0.2]*self.game_states)
-        return params.reshape((1,-1))
-
-    def features(self,board):
-        
-        n_moves=np.sum(np.abs(board.matrix))
-        
-        # Looking for time_code : 
-        t=0
-        while n_moves>self.time_codes[t+1]:
-            t+=1
-         
-        mob=mobility(board,self.rules)
-        pot_mob=potential_mobility(board,self.rules)
-        n_stable=corner_stability(board,self.rules)
-        n_corners=corner_count(board,self.rules)
-        n_precorners=precorners_count(board,self.rules)
-
-        features=np.zeros(self.dim)
-        features[5*t:5*t+5]=np.array([mob,pot_mob,n_corners,n_precorners,n_stable])
-        return features.reshape(1, -1)
-'''
+        super().__init__([naive(rules),mobility(rules),potential_mobility(rules),corner_count(rules),precorners_count(rules),corner_stability(rules),skiped(rules)],t_augmentation=t_augmentation)

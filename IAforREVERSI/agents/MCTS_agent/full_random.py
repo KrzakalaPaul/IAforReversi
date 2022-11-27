@@ -9,11 +9,11 @@ class FullRandomMCTS(GenericMCTS):
     def __init__(self,simu_time=1,c=sqrt(2),verbose=True):
         super().__init__(simu_time=simu_time,verbose=verbose)
         self.c=c
-        self.rollout_agent=RandomAgent()
+        self.rollout_agent=RandomAgent
 
     def eval(self,board_to_eval):
 
-        white_score=simulator(self.rollout_agent,self.rollout_agent,N=self.rules.N,board=board_to_eval.copy())
+        white_score=simulator(self.rollout_agent(),self.rollout_agent(),N=self.rules.N,board=board_to_eval.copy())
         return 2*white_score-1
 
 

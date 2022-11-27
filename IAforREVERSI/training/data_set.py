@@ -52,6 +52,12 @@ class DataSet_Games():
 
 # Associated Functions:
 
+def load_DSG(name,N):
+    DSG=DataSet_Games(N=N)
+    DSG.load(name)
+    return DSG
+
+
 def generate_DSG(Agent1,Agent2,N,N_games):
 
     DSG=DataSet_Games(N)
@@ -81,6 +87,13 @@ def merge_DSG(DSG1:DataSet_Games,DSG2:DataSet_Games):
         DSG.add(game,result)
 
     return DSG
+
+def merge_DSG_list(List):
+    DSG=List[0]
+    for new_DSG in List[1:]:
+        DSG=merge_DSG(DSG,new_DSG)
+    return DSG
+
     
 def merge_from_name(name1,name2,newname,N=8):
     DSG1=DataSet_Games(N)
