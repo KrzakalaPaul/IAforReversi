@@ -3,6 +3,7 @@ from numpy import array,argmax,allclose
 from time import time 
 from numpy import inf
 
+
 class Root():   
     def __init__(self,board):
         self.score_sum=0.0
@@ -24,10 +25,10 @@ class Leaf():
         self.parent=None
         self.board=None
 
-    def score(self):
+    def score_bounded(self):
         return self.temporary_score
     
-    def ucb_score(self):
+    def score(self):
         return self.temporary_score
 
 class Node():
@@ -44,14 +45,20 @@ class Node():
         self.parent=ex_leaf.parent
         self.children=[] # MUST BE EXPANDED AFTER CREATION
     
-    def ucb_score(self):
-        return self.score_sum/self.n_simu
+    def score_bounded(self):
+        if self.solved:
+            return self.exact_score  # type: ignore
+        else:
+            return self.score_sum/self.n_simu
     
     def score(self):
         if self.solved:
             return inf*self.exact_score  # type: ignore
         else:
-            return self.ucb_score()
+            return self.score_sum/self.n_simu
+
+    def panic_score(self):
+        return self.score_sum/self.n_simu
 
 class TerminalNode():
     def __init__(self):
@@ -62,8 +69,11 @@ class TerminalNode():
     def score(self):
         return inf*self.exact_score  # type: ignore
     
-    def ucb_score(self):
+    def score_bounded(self):
         return self.exact_score
+    
+    def panic_score(self):
+        return self.score()
 
 def Count_Leaves_In_Child(Node):
     if isinstance(Node,Leaf):
@@ -106,7 +116,7 @@ class GenericMCTS(GenericAgent):
         children_scores=[]
         for child in node.children:
             if not(isinstance(child,TerminalNode)):
-                children_scores.append(child.ucb_score())
+                children_scores.append(child.score_bounded())
         node.n_simu=len(children_scores)
         node.score_sum=sum([score for score in children_scores])
 
@@ -126,7 +136,6 @@ class GenericMCTS(GenericAgent):
         else:
             assert isinstance(node,Root)
 
-        
 
         # ------------------- Create Children (leaves or Terminals) ------------------- #
         for valid_move in board.valid_moves: # type: ignore
@@ -209,7 +218,7 @@ class GenericMCTS(GenericAgent):
 
     def backprop(self,node):
 
-        score=node.ucb_score()
+        score=node.score_bounded()
 
         ancester=node.parent
         while not(isinstance(ancester,Root)):
@@ -276,8 +285,6 @@ class GenericMCTS(GenericAgent):
 
     def ask_move(self,rules,board,displayer):
 
-        if self.verbose:
-            print('')
         start_simu_time=time()
         N_simu=0
         while time()-start_simu_time<self.simu_time or N_simu==0:
@@ -288,10 +295,12 @@ class GenericMCTS(GenericAgent):
                 displayer.do_nothing()
 
             if self.root.solved==True:
-                if self.root.exact_score==self.root.team:  # type: ignore
-                    if self.verbose:
+                if self.verbose:      
+                    if self.root.exact_score==self.root.team:  # type: ignore
                         print('Checkmate!')
-                    break
+                    else:
+                        print('Panic Mode!')
+                break
         
         self.simulations_counter_total+=N_simu
         if self.verbose:
@@ -317,14 +326,19 @@ class GenericMCTS(GenericAgent):
                 k+=1
 
         team=self.root.team
-        if self.root.solved and self.root.exact_score!=self.root.team:
-            greedy_score=[team*child.ucb_score()  for child in self.root.children]
+        if self.root.solved and self.root.exact_score==-self.root.team:
+            greedy_score=[team*child.panic_score()  for child in self.root.children]
         else:
             greedy_score=[team*child.score()  for child in self.root.children]
         choice=argmax(array(greedy_score))
         
         if self.verbose:
             print(f'Proba of winning, post tree search : {greedy_score[choice]/2+0.5}')
+
+        if self.verbose:
+            print('')
             
         return self.root.children[choice].move
+            
+
             

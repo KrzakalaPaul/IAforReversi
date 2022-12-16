@@ -17,7 +17,8 @@ def train_greedy(eval:LinearEvaluation,N=8,N_outer=10,N_games=100,eps=0.01,verbo
         
         DSG_list=[]
         for opponent in OpponentPool:
-            DSG_list.append(generate_DSG(Agent,opponent,N,N_games=N_games//len(OpponentPool)))
+            new_DSG,winrate_agent1=generate_DSG(Agent,opponent,N,N_games=N_games//len(OpponentPool))
+            DSG_list.append(new_DSG)
         
         DSG=merge_DSG_list(DSG_list)
             

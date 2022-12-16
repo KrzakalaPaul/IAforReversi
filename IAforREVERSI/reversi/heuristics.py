@@ -65,7 +65,26 @@ class potential_mobility(heuristic):
        
         matrix=board.matrix
         empty=(matrix==0)
+        '''
+        white_potential=0
+        black_potential=0
 
+        for empty_pos in board.frontier:
+            a,b=empty_pos
+
+            adj_black=False
+            adj_white=False
+            for i in [-1,0,1]:
+                for j in [-1,0,1]:
+                    value=matrix[a+i,b+j]
+                    if value==1:
+                        adj_white=True
+                    elif value==-1:
+                        adj_black=True
+            white_potential+=adj_black
+            black_potential+=adj_white
+
+        '''
         black_matrix=np.where(matrix==-1,1,0)
         black_adj=ndimage.convolve(black_matrix, self.neighbors_kernel, mode='constant', cval=0)
         white_potential=(black_adj*empty>0).sum()
@@ -73,6 +92,7 @@ class potential_mobility(heuristic):
         white_matrix=np.where(matrix==1,1,0)
         white_adj=ndimage.convolve(white_matrix, self.neighbors_kernel, mode='constant', cval=0)
         black_potential=(white_adj*empty>0).sum()
+        
 
         return [(white_potential-black_potential)/(white_potential+black_potential)]
 

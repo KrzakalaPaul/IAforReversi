@@ -26,24 +26,16 @@ class FullRandomMCTS(GenericMCTS):
         # Try To build an UCB for non solved node:
         for child in node.children:
 
-            if isinstance(child,Leaf):
+            if isinstance(child,Leaf) or isinstance(child,TerminalNode):
                 n=1
-                ucb.append(child.ucb_score()*team + self.c*sqrt(log(N)/n))
+                ucb.append(child.score()*team + self.c*sqrt(log(N)/n))
                 
-            elif isinstance(child,Node):
-                if not(child.solved):
-                    n=child.n_simu
-                    ucb.append(child.ucb_score()*team + self.c*sqrt(log(N)/n))
+            else: 
+                n=child.n_simu
+                ucb.append(child.score()*team + self.c*sqrt(log(N)/n))
 
-
-        if len(ucb)!=0:
-            return node.children[argmax(array(ucb))]
+        return node.children[argmax(array(ucb))]
         
-        else:
-            # Build UCB from extreme score 
-            for child in node.children:
-                ucb.append(team*child.exact_score)  # type: ignore
-            return node.children[argmax(array(ucb))]
 
 
 

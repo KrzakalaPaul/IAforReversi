@@ -29,7 +29,7 @@ class EvalMCTS(FullRandomMCTS):
                 score=2*self.rules.white_win(horizon_board)-1
             else:
                 score=2*self.eval_fct(horizon_board)-1
-            avg_score+=avg_score
+            avg_score+=score
 
         return avg_score/self.k
 
@@ -43,14 +43,9 @@ class EvalMCTS(FullRandomMCTS):
         return super().ask_move(rules,board,displayer)
 
     def init_score(self,node):
-        # Note : if there was a winning TerminalNode 
-        # this node would be 'solved' and this woud not be called
-        # hence we can ignore the TerminalNode who are all lost
-
         children_scores=[]
         for child in node.children:
-            if not(isinstance(child,TerminalNode)):
-                children_scores.append(child.ucb_score())
+            children_scores.append(child.score_bounded())
         node.n_simu=self.n_simu_init
         team=node.team # type: ignore
         minimax_score=max([team*score for score in children_scores])

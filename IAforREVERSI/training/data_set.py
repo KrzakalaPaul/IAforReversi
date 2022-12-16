@@ -58,23 +58,34 @@ def load_DSG(name,N):
     return DSG
 
 
-def generate_DSG(Agent1,Agent2,N,N_games):
+def generate_DSG(Agent1,Agent2,N,N_games,verbose=True,random_moves=2):
 
     DSG=DataSet_Games(N)
+    
+    wins_Agent1=0
+    k=0
 
     for _ in range(N_games//2):
         white_agent=Agent1
         black_agent=Agent2
-        winner,game=simulator_with_save(white_agent,black_agent,N=N)
+        winner,game=simulator_with_save(white_agent,black_agent,N=N,random_moves=random_moves)
+        wins_Agent1+=winner
         DSG.add(game,winner)
+        k+=1
+        if verbose:
+            print(f'{int(100*k/N_games)}%')
 
-    for _ in range(N_games-N_games//2):
+    for _ in range(N_games//2):
         white_agent=Agent2
         black_agent=Agent1
-        winner,game=simulator_with_save(white_agent,black_agent,N=N)
+        winner,game=simulator_with_save(white_agent,black_agent,N=N,random_moves=random_moves)
+        wins_Agent1+=1-winner
         DSG.add(game,winner)
+        k+=1
+        if verbose:
+            print(f'{int(100*k/N_games)}%')
 
-    return DSG
+    return DSG,wins_Agent1/k
 
 def merge_DSG(DSG1:DataSet_Games,DSG2:DataSet_Games):
     assert DSG1.N==DSG2.N

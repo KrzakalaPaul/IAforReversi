@@ -3,6 +3,8 @@ from reversi.board import Board
 from reversi.rules import Rules
 from display.displayer import Displayer
 from agents.human_agent.human_class import HumanAgent
+from agents.random_agent.random_class import RandomAgent
+
 #from agents.random_agent.random_class import RandomAgent
 
 def simulator(WhiteAgent,BlackAgent,N=8,board=None):
@@ -34,9 +36,10 @@ def simulator(WhiteAgent,BlackAgent,N=8,board=None):
 
     return rules.white_win(board)
 
-def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None):
+def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None,random_moves=0):
 
     players={"White" : WhiteAgent, "Black" : BlackAgent}
+    random_player=RandomAgent()
 
     assert not(isinstance(WhiteAgent,HumanAgent))
     assert not(isinstance(BlackAgent,HumanAgent))
@@ -49,10 +52,14 @@ def simulator_with_save(WhiteAgent,BlackAgent,N=8,board=None):
     BlackAgent.new_game(board,rules)
 
     save=[]
-
+    counter_random=0
     while board.current_color in ['White','Black'] :
 
-        current_player=players[board.current_color]
+        if counter_random<random_moves:
+            current_player=random_player
+            counter_random+=1
+        else:
+            current_player=players[board.current_color]
         move=current_player.ask_move(rules,board,None)
         #assert rules.check_valid(board,move)
         rules.apply_move(board,move)

@@ -2,6 +2,7 @@
 import numpy as np
 np.set_printoptions(precision=2)
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import os 
@@ -16,7 +17,7 @@ def sigmoid(x):
 
 
 class LinearEvaluation():
-    def  __init__(self,features_list,t_augmentation):
+    def  __init__(self,features_list,t_augmentation,model_choice='Logistic'):
 
         self.features_list=features_list
         self.nat_dim=0
@@ -26,14 +27,16 @@ class LinearEvaluation():
         N=features_list[0].rules.N
         self.time_codes=np.linspace(0,N**2,t_augmentation+1)
 
-        self.lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
-        self.lr.intercept_= np.zeros((1,))
-        #self.lr.coef_= np.zeros((1,self.dim))
-        self.lr.classes_=np.array([0,1])
-
+        if model_choice=='Logistic':
+            self.model_choice=model_choice
+            self.lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
+            self.lr.intercept_= np.zeros((1,))
+            self.lr.classes_=np.array([0,1])
+        elif model_choice=='SVM':
+            self.model_choice=model_choice
+            self.lr=SVC(gamma='scale',probability=True)
+        
         self.scaler=StandardScaler(with_mean=False)
-        #self.scaler.var_=np.zeros((self.dim,))+1
-
         self.model= make_pipeline(self.scaler,self.lr)
         #self.model= self.lr
 
@@ -58,6 +61,7 @@ class LinearEvaluation():
     def fit(self,DSG):
         X,y=ConvertToDSF(DSG,self)
         self.model.fit(X=X,y=y)
+        print(f'Score: {self.model.score(X=X,y=y)}')
 
     def __call__(self,board):
         feats=self.feature_map(board).reshape(1,-1)
@@ -89,15 +93,17 @@ class LinearEvaluation():
         self.model=pickle.load(open(file_path, 'rb'))
 
     def print(self):
-        
-        for t in range(len(self.time_codes)-1):
-            
-            var=self.scaler.var_[self.nat_dim*t:self.nat_dim*t+self.nat_dim]  # type: ignore
-            coefs=self.lr.coef_[0,self.nat_dim*t:self.nat_dim*t+self.nat_dim]
 
-            print(f'Turns {int(self.time_codes[t])} to {int(self.time_codes[t+1])}...')
-            print(f'var: {var}')
-            print(f'coefs: {coefs}')
+        if self.model_choice=='Logistic':
+        
+            for t in range(len(self.time_codes)-1):
+                
+                var=self.scaler.var_[self.nat_dim*t:self.nat_dim*t+self.nat_dim]  # type: ignore
+                coefs=self.lr.coef_[0,self.nat_dim*t:self.nat_dim*t+self.nat_dim]
+
+                print(f'Turns {int(self.time_codes[t])} to {int(self.time_codes[t+1])}...')
+                print(f'var: {var}')
+                print(f'coefs: {coefs}')
 
 from numpy.random import randint
 
@@ -128,6 +134,10 @@ def ConvertToDSF(DSG:DataSet_Games,eval:LinearEvaluation):
 
 class MyEval(LinearEvaluation):
 
-    def  __init__(self,N,t_augmentation=3):
+    def  __init__(self,N,t_augmentation=3,model_choice='Logistic'):
         rules=Rules(N=N)
-        super().__init__([naive(rules),mobility(rules),potential_mobility(rules),corner_count(rules),precorners_count(rules),corner_stability(rules),skiped(rules)],t_augmentation=t_augmentation)
+        super().__init__([corner_count(rules),mobility(rules),potential_mobility(rules),corner_stability(rules),naive(rules),precorners_count(rules),skiped(rules)],t_augmentation=t_augmentation,model_choice=model_choice)
+
+
+
+

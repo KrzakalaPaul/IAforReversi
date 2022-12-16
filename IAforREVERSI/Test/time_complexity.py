@@ -91,31 +91,37 @@ def heuristics():
 
     
     t=time()
+    eval=mobility(rules)
     for _ in range(10000):
-        mobility(board,rules)
+        eval(board)
     print('mob')
     print(time()-t)
 
     t=time()
+    eval=potential_mobility(rules)
     for _ in range(10000):
-        potential_mobility(board)
+        eval(board)
     print('pot mob')
     print(time()-t)
 
     t=time()
+    eval=corner_stability(rules)
     for _ in range(10000):
-        corner_stability(board)
+        eval(board)
+
     print('corner_stability')
     print(time()-t)
 
     t=time()
+    eval=corner_count(rules)
     for _ in range(10000):
-        corner_count(board)
+        eval(board)
     print('corner_count')
     print(time()-t)
     
     t=time()
+    eval=corner_count(rules)
     for _ in range(10000):
-        precorners_count(board)
+        eval(board)
     print('precorners_count')
     print(time()-t)
