@@ -17,7 +17,7 @@ def sigmoid(x):
 
 
 class LinearEvaluation():
-    def  __init__(self,features_list,t_augmentation,model_choice='Logistic'):
+    def  __init__(self,features_list,t_augmentation,model_choice='Logistic',C=1):
 
         self.features_list=features_list
         self.nat_dim=0
@@ -29,7 +29,7 @@ class LinearEvaluation():
 
         if model_choice=='Logistic':
             self.model_choice=model_choice
-            self.lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000)
+            self.lr=LogisticRegression(fit_intercept=False,warm_start=True,max_iter=1000,C=C)
             self.lr.intercept_= np.zeros((1,))
             self.lr.classes_=np.array([0,1])
         elif model_choice=='SVM':
@@ -134,9 +134,9 @@ def ConvertToDSF(DSG:DataSet_Games,eval:LinearEvaluation):
 
 class MyEval(LinearEvaluation):
 
-    def  __init__(self,N,t_augmentation=3,model_choice='Logistic'):
+    def  __init__(self,N,t_augmentation=3,model_choice='Logistic',C=1):
         rules=Rules(N=N)
-        super().__init__([corner_count(rules),mobility(rules),potential_mobility(rules),corner_stability(rules),naive(rules),precorners_count(rules),skiped(rules)],t_augmentation=t_augmentation,model_choice=model_choice)
+        super().__init__([corner_count(rules),mobility(rules),potential_mobility(rules),corner_stability(rules),naive(rules),precorners_count(rules),skiped(rules)],C=C,t_augmentation=t_augmentation,model_choice=model_choice)
 
 
 

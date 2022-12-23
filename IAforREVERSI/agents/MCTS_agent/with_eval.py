@@ -2,7 +2,7 @@ from agents.MCTS_agent.full_random import FullRandomMCTS
 from agents.MCTS_agent.base_class import GenericMCTS
 from agents.random_agent.random_class import RandomAgent
 from arenas.simulator import finite_horizon_simulator
-from .base_class import TerminalNode
+from .base_class import TerminalNode,Leaf
 from numpy import sqrt
 
 class EvalMCTS(FullRandomMCTS):
@@ -41,6 +41,12 @@ class EvalMCTS(FullRandomMCTS):
             else:
                 print(f'Proba of winning, fast eval : {1-eval_white_win}')
         return super().ask_move(rules,board,displayer)
+
+    def init_children_score(self,node):
+        for child in node.children:
+            if isinstance(child,Leaf):
+                child.n_simu=1
+                child.temporary_score=self.eval(child.board)
 
     def init_score(self,node):
         children_scores=[]

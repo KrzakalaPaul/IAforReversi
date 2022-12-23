@@ -24,6 +24,7 @@ class Leaf():
         self.team=None
         self.parent=None
         self.board=None
+        self.n_simu=0
 
     def score_bounded(self):
         return self.temporary_score
@@ -107,18 +108,15 @@ class GenericMCTS(GenericAgent):
     def eval(self,board):
         ### Evaluation -> Must be Overwritten
         return 0
-
+    
     def init_score(self,node):
-        # Note : if there was a winning TerminalNode 
-        # this node would be 'solved' and this woud not be called
-        # hence we can ignore the TerminalNode who are all lost
+        # If all children have been init : two possible mode, 'mean' (below) and 'max' (version with an eval)
+        # If only one has been init : just copy
+        pass
 
-        children_scores=[]
-        for child in node.children:
-            if not(isinstance(child,TerminalNode)):
-                children_scores.append(child.score_bounded())
-        node.n_simu=len(children_scores)
-        node.score_sum=sum([score for score in children_scores])
+    def init_children_score(self,node):
+        # Either init all leaves or only one (or k etc.)
+        pass
 
     def expand(self,node):
 
@@ -154,7 +152,7 @@ class GenericMCTS(GenericAgent):
                 else:
                     child.team=-1 # type: ignore
                 child.board=new_board
-                child.temporary_score=self.eval(new_board)
+                #child.temporary_score=self.eval(new_board)
 
             child.parent=node # type: ignore
             node.children.append(child) # type: ignore
@@ -162,9 +160,10 @@ class GenericMCTS(GenericAgent):
         # ------------------- Init status 'solved ?' ------------------- #
 
         self.update_solve(node)
-        
-        # ------------------- Init the score of the expanded node ------------------- #
+
+        # ------------------- Init the score of the expanded node and its children ------------------- #
         if not(node.solved):
+            self.init_children_score(node)
             self.init_score(node)
 
         # Return the node that has remplaced the leaf

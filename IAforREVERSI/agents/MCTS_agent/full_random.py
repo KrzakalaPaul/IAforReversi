@@ -6,10 +6,38 @@ from random import choice
 
 class FullRandomMCTS(GenericMCTS):
 
-    def __init__(self,simu_time=1,c=sqrt(2),verbose=True):
+    def __init__(self,simu_time=1,c=sqrt(2),verbose=True,children_init='one'):
         super().__init__(simu_time=simu_time,verbose=verbose)
         self.c=c
+        self.children_init=children_init
         self.rollout_agent=RandomAgent
+
+    def init_score(self,node):
+        children_scores=[]
+        for child in node.children:
+            if not(isinstance(child,TerminalNode)):
+                if child.n_simu>0:
+                    children_scores.append(child.score_bounded())
+        node.n_simu=len(children_scores)
+        node.score_sum=sum([score for score in children_scores])
+
+
+
+    def init_children_score(self,node):
+        if self.children_init=='all':
+            for child in node.children:
+                if isinstance(child,Leaf):
+                    child.n_simu=1
+                    child.temporary_score=self.eval(child.board)
+        else:
+            child_list=[]
+            for child in node.children:
+                if isinstance(child,Leaf):
+                    child_list.append(child)
+            child=choice(child_list)
+            child.n_simu=1
+            child.temporary_score=self.eval(child.board)
+
 
     def eval(self,board_to_eval):
 
@@ -26,10 +54,14 @@ class FullRandomMCTS(GenericMCTS):
         # Try To build an UCB for non solved node:
         for child in node.children:
 
-            if isinstance(child,Leaf) or isinstance(child,TerminalNode):
-                n=1
-                ucb.append(child.score()*team + self.c*sqrt(log(N)/n))
-                
+            if isinstance(child,TerminalNode):
+                ucb.append(child.score()*team)
+            elif isinstance(child,Leaf):
+                if child.n_simu==0:
+                    ucb.append(+inf)
+                else:
+                    n=child.n_simu
+                    ucb.append(child.score()*team + self.c*sqrt(log(N)/n))
             else: 
                 n=child.n_simu
                 ucb.append(child.score()*team + self.c*sqrt(log(N)/n))

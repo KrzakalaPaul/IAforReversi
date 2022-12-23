@@ -13,11 +13,8 @@ class naive(heuristic):
         self.rules=rules
         self.dim=1
     def __call__(self,board):
-        white_score=np.count_nonzero(board.matrix == 1)/np.sum(np.abs(board.matrix))
-        if board.current_color=='White':
-            return [white_score]
-        else :
-            return [1-white_score]
+        white_score=np.count_nonzero(board.matrix == 1)
+        return [white_score]
 
 class positions(heuristic):
     def __init__(self,rules):
@@ -51,7 +48,7 @@ class mobility(heuristic):
             board_black=board.copy()
             board_black.current_color='Black'
             black_mobility=len(self.rules.list_valid_moves(board_black))
-        return [(white_mobility-black_mobility)/(white_mobility+black_mobility+1e-6)]
+        return [(white_mobility-black_mobility)]
 
 
 class potential_mobility(heuristic):
@@ -94,7 +91,7 @@ class potential_mobility(heuristic):
         black_potential=(white_adj*empty>0).sum()
         
 
-        return [(white_potential-black_potential)/(white_potential+black_potential)]
+        return [white_potential-black_potential]
 
 
 class corner_count(heuristic):
@@ -129,7 +126,7 @@ class skiped(heuristic):
         self.dim=1
     
     def __call__(self,board):
-        return [(board.skiped_black-board.skiped_white)/(board.skiped_black-board.skiped_white+1e-6)]
+        return [board.skiped_black-board.skiped_white]
     
 class corner_stability(heuristic):
     def __init__(self,rules):

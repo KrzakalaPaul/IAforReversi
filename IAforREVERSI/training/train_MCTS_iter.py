@@ -16,7 +16,7 @@ def train_MCTS(eval:LinearEvaluation,N=8,N_outer=10,N_games=100,simu_time=3,save
         DSG_list=[]
         winrate_list=[]
         for opponent in OpponentPool:
-            new_DSG,winrate=generate_DSG(Agent,opponent,N,N_games=N_games//len(OpponentPool),random_moves=2)
+            new_DSG,winrate=generate_DSG(Agent,opponent,N,N_games=N_games//len(OpponentPool),random_moves=3)
             winrate_list.append(winrate)
             DSG_list.append(new_DSG)
         
