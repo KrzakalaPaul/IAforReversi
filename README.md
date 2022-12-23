@@ -1,6 +1,10 @@
 
 # IAForReversi
 
+![Screenshot](my_display_reversi.png)
+
+![Screenshot](IAforREVERSI\my_display_reversi.png)
+
 Implementing various RL agents playing Reversi to illustrate the RL course.
 
 ## Current level
