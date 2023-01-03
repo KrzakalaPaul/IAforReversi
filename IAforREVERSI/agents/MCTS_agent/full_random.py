@@ -6,11 +6,11 @@ from random import choice
 
 class FullRandomMCTS(GenericMCTS):
 
-    def __init__(self,simu_time=1,c=sqrt(2),verbose=True,children_init='one'):
+    def __init__(self,simu_time=1,c=sqrt(2),verbose=True,children_init='one',rollout_agent=RandomAgent):
         super().__init__(simu_time=simu_time,verbose=verbose)
         self.c=c
         self.children_init=children_init
-        self.rollout_agent=RandomAgent
+        self.rollout_agent=rollout_agent
 
     def init_score(self,node):
         children_scores=[]

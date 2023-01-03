@@ -58,7 +58,7 @@ def load_DSG(name,N):
     return DSG
 
 
-def generate_DSG(Agent1,Agent2,N,N_games,verbose=True,random_moves=2):
+def generate_DSG(Agent1,Agent2,N,N_games,verbose=False,random_moves=2):
 
     DSG=DataSet_Games(N)
     
